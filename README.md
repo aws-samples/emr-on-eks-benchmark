@@ -1,7 +1,7 @@
 ## Spark on Kubernetes benchmark utility
 
 This repository is used to benchmark Spark performance on Kubernetes. 
-If you want to use the [prebuild docker image](https://github.com/melodyyangaws/eks-spark-benchmark/pkgs/container/eks-spark-benchmark) based on a prebuild OSS spark_3.1.2_hadoop_3.3.1, you can skip the [build section](#Build-benchmark-utility-docker-image) and jump to [Run Benchmark](#Run-Benchmark) directly. If you want to build your own, follow the steps in the [build section](#Build-benchmark-utility-docker-image).
+If you want to use the [prebuild docker image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/emr-on-eks-benchmark) based on a prebuild OSS spark_3.1.2_hadoop_3.3.1, you can skip the [build section](#Build-benchmark-utility-docker-image) and jump to [Run Benchmark](#Run-Benchmark) directly. If you want to build your own, follow the steps in the [build section](#Build-benchmark-utility-docker-image).
 
 ## Prerequisite
 
@@ -39,7 +39,7 @@ docker --version
 
 ## Set up test environment
 
-The script creates a new EKS cluster, enables EMR on EKS and builds a private ECR for the eks-spark-benchmark utility docker image.
+The script creates a new EKS cluster, enables EMR on EKS and builds a private ECR for the eks-spark-benchmark utility docker image. Change the region if needed.
 ```bash
 export EKSCLUSTER_NAME=eks-nvme
 export AWS_REGION=us-east-1
@@ -47,12 +47,12 @@ export AWS_REGION=us-east-1
 ```
 ## Build benchmark utility docker image
 
-This repo has the [auto-build workflow](./.github/workflows/relase-package.yaml) enabled, which builds the [eks-spark-benchmark image](https://github.com/melodyyangaws/eks-spark-benchmark/pkgs/container/eks-spark-benchmark) triggered by code changes in the main branch. 
+This repo has the [auto-build workflow](./.github/workflows/relase-package.yaml) enabled, which builds the [eks-spark-benchmark image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/emr-on-eks-benchmark) triggered by code changes in the main branch. 
 
 To build manually, run the command:
 ```bash
 # stay in the project root directory
-cd eks-spark-benchmark
+cd emr-on-eks-benchmark
 
 # Login to ECR
 ECR_URL=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
@@ -106,9 +106,9 @@ kubectl create -n emr configmap special-config --from-literal=codeBucket=$app_co
 kubectl apply -f examples/tpcds-benchmark.yaml
 ```
 
-### Run TPC-DS benchmark for EMR on EKS
+### Run EMR on EKS benchmark
 ```shell
-# set EMR virtual cluster name
+# set EMR virtual cluster name, change the region if needed
 export EMRCLUSTER_NAME=emr-on-eks-nvme
 export AWS_REGION=us-east-1
 bash examples/emr6.5-benchmark.sh
