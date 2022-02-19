@@ -29,7 +29,7 @@ FROM ${SPARK_BASE_IMAGE}
 USER root
 
 COPY --from=tpc-toolkit /tmp/tpcds-kit/tools /opt/tpcds-kit/tools
-COPY --from=sbt /tmp/eks-spark-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
+COPY --from=sbt /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
 
 # # Use hadoop user and group 
 USER hadoop:hadoop
