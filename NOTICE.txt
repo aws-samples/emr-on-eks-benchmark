@@ -1,0 +1,25 @@
+emr-on-eks-benchmark
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and associated documentation files (the "Software"), to deal in the Software
+without restriction, including without limitation the rights to use, copy, modify,
+merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+**********************
+THIRD PARTY COMPONENTS
+**********************
+This software includes third party software subject to the following copyrights:
+
+** databricks/tpcds-kit -- https://github.com/databricks/tpcds-kit -- Apache-2.0
+** databricks/spark-sql-perf -- https://github.com/databricks/spark-sql-perf -- Apahe-2.0
+** k8s-cluster-autoscaler -- v1.19.1 -- https://github.com/kubernetes/autoscaler -- Apache-2.0
+** spark-on-k8s-operator -- v1beta2-1.2.3-3.1.1 -- https://github.com/GoogleCloudPlatform/spark-on-k8s-operator -- Apache-2.0

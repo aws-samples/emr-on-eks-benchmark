@@ -1,0 +1,180 @@
+output: /tmp/results2
+timeoutSeconds: 1000
+common:
+  numFeatures: 10
+  numExamples: [1, 3]
+  numTestExamples: 100
+  numPartitions: 3
+  randomSeed: [1]
+benchmarks:
+  - name: classification.DecisionTreeClassification
+    params:
+      numExamples: 100
+      numTestExamples: 10
+      depth: 3
+      numClasses: 4
+      numFeatures: 5
+  - name: classification.GBTClassification
+    params:
+      numExamples: 100
+      numTestExamples: 10
+      depth: 3
+      numClasses: 2
+      numFeatures: 5
+      maxIter: 3
+  - name: classification.LinearSVC
+    params:
+      numExamples: 100
+      numFeatures: 10
+      regParam: 0.1
+      tol: 0.001
+      maxIter: 10
+  - name: classification.LogisticRegression
+    params:
+      numFeatures: 100
+      regParam: 0.1
+      tol: [0.2, 0.1]
+      maxIter: 10
+  - name: classification.NaiveBayes
+    params:
+      numExamples: 100
+      smoothing: 1.0
+      numClasses: 10
+      numFeatures: [10]
+  - name: classification.RandomForestClassification
+    params:
+      numExamples: 100
+      numTestExamples: 10
+      depth: 3
+      numClasses: 4
+      numFeatures: 5
+      maxIter: 3
+  - name: clustering.GaussianMixture
+    params:
+      numExamples: 10
+      numTestExamples: 10
+      k: 5
+      maxIter: 10
+      tol: 0.01
+  - name: clustering.KMeans
+    params:
+      numExamples: 10
+      numTestExamples: 10
+      k: 5
+      maxIter: 10
+      tol: 1e-4
+  - name: clustering.LDA
+    params:
+      numExamples: 10
+      numTestExamples: 10
+      docLength: 20
+      vocabSize: 4
+      k: 5
+      maxIter: 10
+      optimizer:
+        - em
+        - online
+  - name: feature.BucketedRandomProjectionLSH
+    params:
+      numExamples: 100
+      numFeatures: 10
+      numHashTables: 1
+  - name: feature.Bucketizer
+    params:
+      numExamples: 100
+      bucketizerNumBuckets: 10
+  - name: feature.HashingTF
+    params:
+      numExamples: 100
+      docLength: 20
+      vocabSize: 4
+  - name: feature.MinHashLSH
+    params:
+      numExamples: 100
+      numFeatures: 10
+      numHashTables: 1
+  - name: feature.OneHotEncoder
+    params:
+      numExamples: 100
+      featureArity: 10
+  - name: feature.QuantileDiscretizer
+    params:
+      numExamples: 100
+      bucketizerNumBuckets: 2
+      relativeError: 0.001
+  - name: feature.StringIndexer
+    params:
+      numExamples: 100
+      vocabSize: 10
+  - name: feature.Tokenizer
+    params:
+      numExamples: 100
+      vocabSize: 10
+      docLength: 10
+  - name: feature.VectorAssembler
+    params:
+      numExamples: 100
+      numInputCols: 5
+      numFeatures: 10
+  - name: feature.VectorSlicer
+    params:
+      numExamples: 100
+      numFeatures: 10
+  - name: feature.Word2Vec
+    params:
+      numExamples: 100
+      vocabSize: 100
+      docLength: 10
+      numSynonymsToFind: 3
+  - name: recommendation.ALS
+    params:
+      numExamples: 100
+      numTestExamples: 100
+      numUsers: 100
+      numItems: 100
+      regParam: 0.1
+      rank: 10
+      maxIter: 6
+  - name: regression.DecisionTreeRegression
+    params:
+      numExamples: 100
+      numTestExamples: 10
+      depth: 3
+      numClasses: 4
+      numFeatures: 5
+  - name: regression.GBTRegression
+    params:
+      numExamples: 100
+      numTestExamples: 10
+      depth: 3
+      maxIter: 3
+  - name: regression.GLMRegression
+    params:
+      numExamples: 100
+      numTestExamples: 10
+      numFeatures: 5
+      link: log
+      family: gaussian
+      tol: 1e-6
+      maxIter: 10
+      regParam: 0.1
+  - name: regression.LinearRegression
+    params:
+      numExamples: 100
+      numTestExamples: 100
+      numFeatures: 100
+      regParam: 0.1
+      tol: [1e-6]
+      maxIter: 10
+  - name: regression.RandomForestRegression
+    params:
+      numExamples: 100
+      numTestExamples: 10
+      depth: 3
+      numFeatures: 5
+      maxIter: 3
+  - name: fpm.FPGrowth
+    params:
+      numExamples: 200
+      numItems: 6
+      itemSetSize: 3
