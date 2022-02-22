@@ -39,7 +39,7 @@ docker --version
 
 ## Set up test environment
 
-The script creates a new EKS cluster, enables EMR on EKS and builds a private ECR for the spark-benchmark utility docker image. Change the region if needed.
+The script creates a new EKS cluster, enables EMR on EKS and builds a private ECR for the eks-spark-benchmark utility docker image. Change the region if needed.
 ```bash
 export EKSCLUSTER_NAME=eks-nvme
 export AWS_REGION=us-east-1
@@ -47,7 +47,7 @@ export AWS_REGION=us-east-1
 ```
 ## Build benchmark utility docker image
 
-This repo has the [auto-build workflow](./.github/workflows/relase-package.yaml) enabled, which builds the [spark-benchmark image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/spark-benchmark) triggered by code changes in the main branch. It is a docker image based on Apache Spark base image.
+This repo has the [auto-build workflow](./.github/workflows/relase-package.yaml) enabled, which builds the [eks-spark-benchmark image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/eks-spark-benchmark) triggered by code changes in the main branch. It is a docker image based on Apache Spark base image.
 
 To build manually, run the command:
 ```bash
@@ -64,7 +64,7 @@ docker build -t $ECR_URL/spark:3.1.2_hadoop_3.3.1 -f docker/hadoop-aws-3.3.1/Doc
 docker push $ECR_URL/spark:3.1.2_hadoop_3.3.1
 
 # Build benchmark utility based on the Spark 
-docker build -t $ECR_URL/spark-benchmark:3.1.2 -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$ECR_URL/spark:3.1.2_hadoop_3.3.1 .
+docker build -t $ECR_URL/eks-spark-benchmark:3.1.2 -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$ECR_URL/spark:3.1.2_hadoop_3.3.1 .
 ```
 
 If you need to build the image based on a different Spark image, for example [EMR Spark runtime](https://docs.aws.amazon.com/emr/latest/EMR-on-EKS-DevelopmentGuide/docker-custom-images-tag.html), run the command:
@@ -75,16 +75,16 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 docker pull $SRC_ECR_URL/spark/emr-6.5.0:latest
 
 # Custom an image on top of the EMR Spark
-docker build -t $ECR_URL/spark-benchmark:emr6.5 -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$SRC_ECR_URL/spark/emr-6.5.0:latest .
+docker build -t $ECR_URL/eks-spark-benchmark:emr6.5 -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$SRC_ECR_URL/spark/emr-6.5.0:latest .
 ```
 
 Finally, push it to your ECR. Replace the default docker images in [examples](./examples) if needed:
 ```bash
-aws ecr create-repository --repository-name spark-benchmark --image-scanning-configuration scanOnPush=true
+aws ecr create-repository --repository-name eks-spark-benchmark --image-scanning-configuration scanOnPush=true
 # benchmark utility image based on Apache Spark3.1.2
-docker push $ECR_URL/spark-benchmark:3.1.2
+docker push $ECR_URL/eks-spark-benchmark:3.1.2
 # benchmark utility image based on EMR Spark runtime
-docker push $ECR_URL/spark-benchmark:emr6.5
+docker push $ECR_URL/eks-spark-benchmark:emr6.5
 ```
 
 ## Run Benchmark

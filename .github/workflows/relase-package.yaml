@@ -21,7 +21,7 @@ env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
-  IMAGE_NAME: spark-benchmark
+  IMAGE_NAME: aws-samples/eks-spark-benchmark
 
 
 jobs:
