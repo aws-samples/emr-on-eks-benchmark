@@ -43,7 +43,7 @@ iam:
 
 managedNodeGroups: 
   - name: mn-od
-    availabilityZones: ["us-east-1a"] 
+    availabilityZones: ["us-east-1b"] 
     preBootstrapCommands:
       - "mkfs.xfs /dev/nvme1n1;mkdir -p /local1;echo /dev/nvme1n1 /local1 xfs defaults,noatime 1 2 >> /etc/fstab;"
       - "mount -a"

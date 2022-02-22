@@ -47,7 +47,7 @@ export AWS_REGION=us-east-1
 ```
 ## Build benchmark utility docker image
 
-This repo has the [auto-build workflow](./.github/workflows/relase-package.yaml) enabled, which builds the [eks-spark-benchmark image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/emr-on-eks-benchmark) triggered by code changes in the main branch. 
+This repo has the [auto-build workflow](./.github/workflows/relase-package.yaml) enabled, which builds the [eks-spark-benchmark image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/eks-spark-benchmark) triggered by code changes in the main branch. It is a docker image based on Apache Spark base image.
 
 To build manually, run the command:
 ```bash
@@ -81,7 +81,7 @@ docker build -t $ECR_URL/eks-spark-benchmark:emr6.5 -f docker/benchmark-util/Doc
 Finally, push it to your ECR. Replace the default docker images in [examples](./examples) if needed:
 ```bash
 aws ecr create-repository --repository-name eks-spark-benchmark --image-scanning-configuration scanOnPush=true
-# benchmark utility image based on OSS Spark3.1.2
+# benchmark utility image based on Apache Spark3.1.2
 docker push $ECR_URL/eks-spark-benchmark:3.1.2
 # benchmark utility image based on EMR Spark runtime
 docker push $ECR_URL/eks-spark-benchmark:emr6.5
