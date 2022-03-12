@@ -21,7 +21,7 @@ echo "  setup IAM roles ......"
 echo "==============================================="
 
 # create S3 bucket for application
-aws s3api create-bucket --bucket $S3TEST_BUCKET --region $AWS_REGION
+aws s3api create-bucket --bucket $S3TEST_BUCKET --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION
 
 # Create a job execution role (https://docs.aws.amazon.com/emr/latest/EMR-on-EKS-DevelopmentGuide/creating-job-execution-role.html)
 cat > /tmp/job-execution-policy.json <<EOL
@@ -31,7 +31,12 @@ cat > /tmp/job-execution-policy.json <<EOL
         {
             "Effect": "Allow",
             "Action": ["s3:PutObject","s3:DeleteObject","s3:GetObject","s3:ListBucket"],
-            "Resource": ["arn:aws:s3:::${S3TEST_BUCKET}","arn:aws:s3:::${S3TEST_BUCKET}/*"]
+            "Resource": [
+              "arn:aws:s3:::${S3TEST_BUCKET}",
+              "arn:aws:s3:::${S3TEST_BUCKET}/*",
+              "arn:aws:s3:::blogpost-sparkoneks-us-east-1/blog/BLOG_TPCDS-TEST-3T-partitioned/*",
+              "arn:aws:s3:::blogpost-sparkoneks-us-east-1"
+            ]
         }, 
         {
             "Effect": "Allow",
@@ -218,18 +223,20 @@ echo "  Upload project examples to S3 ......"
 echo "============================================================================="
 aws s3 sync examples/ s3://$S3TEST_BUCKET/app_code/
 
-# echo "============================================================================="
-# echo "  Create ECR for eks-spark-benchmark utility docker image ......"
-# echo "============================================================================="
-# export ECR_URL="$ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com"
-# aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
-# aws ecr  create-repository --repository-name eks-spark-benchmark --image-scanning-configuration scanOnPush=true
-# # pull
-# aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
-# docker pull public.ecr.aws/w5m3x7g4/eks-spark-benchmark:emr6.5
-# docker tag public.ecr.aws/w5m3x7g4/eks-spark-benchmark:emr6.5 $ECR_URL/eks-spark-benchmark:emr6.5
-# # push
-# aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
-# Docker push $ECR_URL/eks-spark-benchmark:emr6.5
+echo "============================================================================="
+echo "  Create ECR for eks-spark-benchmark utility docker image ......"
+echo "============================================================================="
+export ECR_URL="$ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com"
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+aws ecr  create-repository --repository-name eks-spark-benchmark --image-scanning-configuration scanOnPush=true
+# get EMR on EKS base image
+export SRC_ECR_URL=755674844232.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $SRC_ECR_URL
+docker pull $SRC_ECR_URL/spark/emr-6.5.0:latest
+# Custom image on top of the EMR Spark runtime
+docker build -t $ECR_URL/eks-spark-benchmark:emr6.5 -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$SRC_ECR_URL/spark/emr-6.5.0:latest .
+# push
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+docker push $ECR_URL/eks-spark-benchmark:emr6.5
 
 echo "Finished, proceed to submitting a job"

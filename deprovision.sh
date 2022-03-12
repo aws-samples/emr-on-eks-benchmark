@@ -23,6 +23,6 @@ aws iam delete-role --role-name $ROLE_NAME
 aws iam delete-policy --policy-arn $POLICY_ARN
 aws s3 rm s3://$S3TEST_BUCKET --recursive
 aws s3api delete-bucket --bucket $S3TEST_BUCKET
-# # uncomment it out if use ECR to store the benchmark utility
-# aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
-# aws ecr delete-repository --repository-name eks-spark-benchmark --force
+# uncomment it out if use ECR to store the benchmark utility
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+aws ecr delete-repository --repository-name eks-spark-benchmark --force

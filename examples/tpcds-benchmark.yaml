@@ -15,7 +15,7 @@ spec:
   mainApplicationFile: local:///opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar
   arguments:
   # TPC-DS data localtion
-    - "s3://aws-big-data-blog/artifacts/bdb-2132/BLOG_TPCDS-TEST-3T-partitioned"
+    - "s3://blogpost-sparkoneks-us-east-1/blog/BLOG_TPCDS-TEST-3T-partitioned"
   # results location
     - "s3://$(BUCKET_PARAM)/OSS_TPCDS-TEST-3T-RESULT"
   # Path to kit in the docker image
@@ -42,7 +42,7 @@ spec:
     "spark.sql.adaptive.skewJoin.enabled": "true"
     # "spark.sql.adaptive.logLevel": "WARN"      
     # IRSA for S3 connection
-    "spark.kubernetes.executor.podNamePrefix": "oss-spark-tpcds-2g1000"
+    "spark.kubernetes.executor.podNamePrefix": "oss-spark-tpcds"
     "spark.hadoop.fs.s3a.aws.credentials.provider": "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"
     "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
     "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2" 
