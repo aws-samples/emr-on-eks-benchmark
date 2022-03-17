@@ -114,7 +114,7 @@ export AWS_REGION=us-east-1
 bash examples/emr6.5-benchmark.sh
 ```
 ### Benchmark for EMR on EC2
-The benchmark utility app is packaged up to a jar file during an [automated GitHub workflow](https://github.com/aws-samples/emr-on-eks-benchmark/actions/workflows/relase-package.yaml) process. The quickest way to get the jar is from a running Kubernetes container.
+The same benchmark utility app can be used to test EMR on EC2, which is packaged up to a jar file during an [automated GitHub workflow](https://github.com/aws-samples/emr-on-eks-benchmark/actions/workflows/relase-package.yaml) process. The quickest way to get the jar is from a running Kubernetes container.
 ```bash
 # Download the jar and ignore the warning message
 kubectl cp oss/oss-spark-tpcds-exec-1:/opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar eks-spark-benchmark-assembly-1.0.jar
