@@ -127,7 +127,7 @@ aws s3 cp eks-spark-benchmark-assembly-1.0.jar s3://$S3BUCKET
 Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`:
 ```bash
 # Step type: Spark Application
-# JAR location: s3://$app_code_bucket/eks-spark-benchmark-assembly-1.0.jar
+# JAR location: s3://$S3BUCKET/eks-spark-benchmark-assembly-1.0.jar
 # Spark-submit options:
 --class com.amazonaws.eks.tpcds.BenchmarkSQL --conf spark.driver.cores=4 --conf spark.driver.memory=5g --conf spark.executor.cores=4 --conf spark.executor.memory=6g --conf spark.executor.instances=47 --conf spark.network.timeout=2000 --conf spark.executor.heartbeatInterval="300s" --conf spark.executor.memoryOverhead=2G --conf spark.driver.memoryOverhead=1000 --conf spark.dynamicAllocation.enabled=false --conf spark.shuffle.service.enabled=false
 # Arguments:
