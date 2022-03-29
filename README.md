@@ -100,7 +100,7 @@ kubectl apply -f examples/tpcds-data-generation.yaml
 The benchmark file contains a configmap that dynamically map your S3 bucket to the environment variable **codeBucket** in EKS. Run the command to set up the configmap:
 ```bash
 app_code_bucket=<S3_BUCKET_HAS_TPCDS_DATASET>
-kubectl create -n emr configmap special-config --from-literal=codeBucket=$app_code_bucket
+kubectl create -n oss configmap special-config --from-literal=codeBucket=$app_code_bucket
 
 # start the benchmark test job
 kubectl apply -f examples/tpcds-benchmark.yaml
