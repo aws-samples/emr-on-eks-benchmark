@@ -114,6 +114,10 @@ export AWS_REGION=us-east-1
 bash examples/emr6.5-benchmark.sh
 ```
 ### Benchmark for EMR on EC2
+Few notes for the set up:
+1. Use the same instance type c5d.9xlarge as in the EKS cluster. 
+2. If choosing an EBS-backed instance, check the [default instance storage setting](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-storage.html) by EMR on EC2, and attach the same number of EBS volumes to your EKS cluster before running EKS related benchmarks. 
+
 The benchmark utility app was compiled to a jar file during an [automated GitHub workflow](https://github.com/aws-samples/emr-on-eks-benchmark/actions/workflows/relase-package.yaml) process. The quickest way to get the jar is from a running Kubernetes container.
 ```bash
 # Download the jar and ignore the warning message
@@ -124,7 +128,7 @@ S3BUCKET=<S3_BUCKET_HAS_TPCDS_DATASET>
 aws s3 cp eks-spark-benchmark-assembly-1.0.jar s3://$S3BUCKET
 ```
 
-Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`:
+Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`: 
 ```bash
 # Step type: Spark Application
 # JAR location: s3://$S3BUCKET/eks-spark-benchmark-assembly-1.0.jar
