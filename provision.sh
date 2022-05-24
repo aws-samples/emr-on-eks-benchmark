@@ -15,16 +15,18 @@ export ROLE_NAME=${EMRCLUSTER_NAME}-execution-role
 export ACCOUNTID=$(aws sts get-caller-identity --query Account --output text)
 export S3TEST_BUCKET=${EMRCLUSTER_NAME}-${ACCOUNTID}-${AWS_REGION}
 
-
 echo "==============================================="
 echo "  setup IAM roles ......"
 echo "==============================================="
 
 # create S3 bucket for application
-aws s3api create-bucket --bucket $S3TEST_BUCKET --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION
-
+if [ $AWS_REGION=="us-east-1" ]; then
+  aws s3api create-bucket --bucket $S3TEST_BUCKET --region $AWS_REGION 
+else
+  aws s3api create-bucket --bucket $S3TEST_BUCKET --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION
+fi
 # Create a job execution role (https://docs.aws.amazon.com/emr/latest/EMR-on-EKS-DevelopmentGuide/creating-job-execution-role.html)
-cat > /tmp/job-execution-policy.json <<EOL
+cat >/tmp/job-execution-policy.json <<EOL
 {
     "Version": "2012-10-17",
     "Statement": [ 
@@ -47,7 +49,7 @@ cat > /tmp/job-execution-policy.json <<EOL
 }
 EOL
 
-cat > /tmp/trust-policy.json <<EOL
+cat >/tmp/trust-policy.json <<EOL
 {
   "Version": "2012-10-17",
   "Statement": [ {
@@ -62,12 +64,11 @@ aws iam create-policy --policy-name $ROLE_NAME-policy --policy-document file:///
 aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file:///tmp/trust-policy.json
 aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::$ACCOUNTID:policy/$ROLE_NAME-policy
 
-
 echo "==============================================="
 echo "  Create EKS Cluster ......"
 echo "==============================================="
 
-cat << EOF > /tmp/ekscluster.yaml
+cat <<EOF >/tmp/ekscluster.yaml
 ---
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
@@ -129,7 +130,6 @@ eksctl create cluster -f /tmp/ekscluster.yaml
 # eksctl create nodegroup -f /tmp/ekscluster.yaml
 aws eks update-kubeconfig --name $EKSCLUSTER_NAME --region $AWS_REGION
 
-
 echo "==============================================="
 echo "  Enable EMR on EKS ......"
 echo "==============================================="
@@ -143,19 +143,17 @@ aws emr-containers update-role-trust-policy --cluster-name $EKSCLUSTER_NAME --na
 
 # Create emr virtual cluster
 aws emr-containers create-virtual-cluster --name $EMRCLUSTER_NAME \
-    --container-provider '{
+  --container-provider '{
         "id": "'$EKSCLUSTER_NAME'",
         "type": "EKS",
         "info": { "eksInfo": { "namespace": "'$EMR_NAMESPACE'" } }
     }'
 
-
 echo "==============================================="
 echo "  Configure EKS Cluster ......"
 echo "==============================================="
-
 # config k8s rbac access to service account 'oss'
-cat << EOF | kubectl apply -f - -n $OSS_NAMESPACE
+cat <<EOF | kubectl apply -f - -n $OSS_NAMESPACE
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -183,13 +181,13 @@ EOF
 
 # Map S3 bucket to the EMR namespace dyanmically
 kubectl create configmap --namespace $OSS_NAMESPACE special-config --from-literal=codeBucket=$S3TEST_BUCKET
-# kubectl create configmap --namespace $OSS_NAMESPACE pod-template --from-file=docker/benchmark-util/default-driver-pod-template.yaml --from-file=docker/benchmark-util/default-executor-pod-template.yaml 
+# kubectl create configmap --namespace $OSS_NAMESPACE pod-template --from-file=docker/benchmark-util/default-driver-pod-template.yaml --from-file=docker/benchmark-util/default-executor-pod-template.yaml
 
 # Install k8s metrics server
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
 # Install Cluster Autoscale that automatically adjusts the number of nodes in EKS
-cat << EOF > /tmp/autoscaler-config.yaml
+cat <<EOF >/tmp/autoscaler-config.yaml
 ---
 autoDiscovery:
     clusterName: $EKSCLUSTER_NAME
@@ -216,7 +214,7 @@ helm install nodescaler autoscaler/cluster-autoscaler --namespace kube-system --
 # Install Spark-Operator for the OSS Spark test
 helm repo add spark-operator https://googlecloudplatform.github.io/spark-on-k8s-operator
 helm install -n $OSS_NAMESPACE spark-operator spark-operator/spark-operator --version 1.1.6 \
---set serviceAccounts.spark.create=false --set metrics.enable=false --set webhook.enable=true --set webhook.port=443 --debug
+  --set serviceAccounts.spark.create=false --set metrics.enable=false --set webhook.enable=true --set webhook.port=443 --debug
 
 echo "============================================================================="
 echo "  Upload project examples to S3 ......"
@@ -228,7 +226,7 @@ echo "  Create ECR for eks-spark-benchmark utility docker image ......"
 echo "============================================================================="
 export ECR_URL="$ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com"
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
-aws ecr  create-repository --repository-name eks-spark-benchmark --image-scanning-configuration scanOnPush=true
+aws ecr create-repository --repository-name eks-spark-benchmark --image-scanning-configuration scanOnPush=true
 # get EMR on EKS base image
 export SRC_ECR_URL=755674844232.dkr.ecr.us-east-1.amazonaws.com
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $SRC_ECR_URL
