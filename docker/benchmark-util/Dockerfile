@@ -6,7 +6,8 @@ FROM amazonlinux:2 as tpc-toolkit
 
 ENV TPCDS_KIT_VERSION "master"
 
-RUN yum group install -y "Development Tools" && \
+RUN yum update -y && \
+    yum group install -y "Development Tools" && \
     git clone https://github.com/databricks/tpcds-kit.git -b ${TPCDS_KIT_VERSION} /tmp/tpcds-kit && \
     cd /tmp/tpcds-kit/tools && \
     make OS=LINUX
