@@ -55,6 +55,7 @@ To build manually, run the command:
 cd emr-on-eks-benchmark
 
 # Login to ECR
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ECR_URL=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
 aws ecr create-repository --repository-name spark --image-scanning-configuration scanOnPush=true
