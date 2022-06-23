@@ -1,9 +1,7 @@
-# // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# // SPDX-License-Identifier: MIT-0
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: eks-nvme
+  name: multi-arch-test
   region: us-east-1
   version: "1.21"
 vpc:
@@ -26,42 +24,75 @@ iam:
       namespace: oss
       labels: {aws-usage: "application"}
     attachPolicyARNs:
-    - arn:aws:iam::123456789:policy/emr-on-eks-test-policy
-#   - metadata:
-#       name: ebs-csi-controller-sa
-#       namespace: kube-system
-#       labels: {aws-usage: "cluster-ops"}
-#     wellKnownPolicies:   
-#       ebsCSIController: true
-#     roleName: eksctl-ebs-csi-role      
-# addons: 
-# # ebs csi consideration 
-# # https://docs.aws.amazon.com/eks/latest/userguide/managing-ebs-csi.html
-#   - name: aws-ebs-csi-driver
-#     version: latest
-#     serviceAccountRoleARN: arn:aws:iam::${ACCOUNTID}:role/eksctl-ebs-csi-role
-
+    - arn:aws:iam::021732063925:policy/emr-on-eks-nvme-execution-role-policy
 managedNodeGroups: 
-  - name: mn-od
-    availabilityZones: ["us-east-1b"] 
+  - name: C5_9
+    instanceType: c5.9xlarge
+    availabilityZones: ["us-east-1a"] 
     preBootstrapCommands:
-      - "mkfs.xfs /dev/nvme1n1;mkdir -p /local1;echo /dev/nvme1n1 /local1 xfs defaults,noatime 1 2 >> /etc/fstab;"
-      - "mount -a"
-      - "chown ec2-user:ec2-user /local1"
-    instanceType: c5d.9xlarge
-    # ebs optimization is enabled by default
+      - "IDX=1;for DEV in /dev/nvme[1-9]n1;do sudo mkfs.xfs ${DEV}; sudo mkdir -p /local${IDX}; sudo echo ${DEV} /local${IDX} xfs defaults,noatime 1 2 >> /etc/fstab; IDX=$((${IDX} + 1)); done"
+      - "sudo mount -a"
+      - "sudo chown ec2-user:ec2-user /local*"
     volumeSize: 20
-    volumeType: gp2
+    volumeType: gp3
     minSize: 1
     desiredCapacity: 1
+    additionalVolumes:
+      - volumeName: '/dev/sdf'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400
+      - volumeName: '/dev/sdg'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400  
+      - volumeName: '/dev/sdh'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400    
+      - volumeName: '/dev/sdi'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400  
     maxSize: 30
-    labels:
-      app: sparktest 
     tags:
       # required for cluster-autoscaler auto-discovery
       k8s.io/cluster-autoscaler/enabled: "true"
       k8s.io/cluster-autoscaler/eks-nvme: "owned"  
-
+  - name: C7g_8
+    instanceType: c7g.8xlarge
+    availabilityZones: ["us-east-1b"]
+    preBootstrapCommands:
+      - "IDX=1;for DEV in /dev/nvme[1-9]n1;do sudo mkfs.xfs ${DEV}; sudo mkdir -p /local${IDX}; sudo echo ${DEV} /local${IDX} xfs defaults,noatime 1 2 >> /etc/fstab; IDX=$((${IDX} + 1)); done"
+      - "sudo mount -a"
+      - "sudo chown ec2-user:ec2-user /local*"
+    volumeSize: 20
+    volumeType: gp3
+    minSize: 1
+    desiredCapacity: 1
+    additionalVolumes:
+      - volumeName: '/dev/sdf'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400
+      - volumeName: '/dev/sdg'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400  
+      - volumeName: '/dev/sdh'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400    
+      - volumeName: '/dev/sdi'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400     
+    maxSize: 30
+    tags:
+      # required for cluster-autoscaler auto-discovery
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/eks-nvme: "owned"
+  
 # enable all of the control plane logs
 cloudWatch:
  clusterLogging:
