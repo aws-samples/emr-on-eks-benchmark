@@ -2,13 +2,13 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
   name: multi-arch-test
-  region: us-east-1
+  region: {REGION}
   version: "1.21"
 vpc:
   clusterEndpoints:
       publicAccess: true
       privateAccess: true  
-availabilityZones: ["us-east-1a","us-east-1b"]   
+availabilityZones: [{REGION}"a",{REGION}"b"]   
 iam:
   withOIDC: true
   serviceAccounts:
@@ -24,11 +24,11 @@ iam:
       namespace: oss
       labels: {aws-usage: "application"}
     attachPolicyARNs:
-    - arn:aws:iam::021732063925:policy/emr-on-eks-nvme-execution-role-policy
+    - arn:aws:iam::{ACCOUNT_ID}:policy/emr-on-eks-nvme-execution-role-policy
 managedNodeGroups: 
   - name: C5_9
     instanceType: c5.9xlarge
-    availabilityZones: ["us-east-1a"] 
+    availabilityZones: [{REGION}"a"] 
     preBootstrapCommands:
       - "IDX=1;for DEV in /dev/nvme[1-9]n1;do sudo mkfs.xfs ${DEV}; sudo mkdir -p /local${IDX}; sudo echo ${DEV} /local${IDX} xfs defaults,noatime 1 2 >> /etc/fstab; IDX=$((${IDX} + 1)); done"
       - "sudo mount -a"
@@ -59,9 +59,42 @@ managedNodeGroups:
       # required for cluster-autoscaler auto-discovery
       k8s.io/cluster-autoscaler/enabled: "true"
       k8s.io/cluster-autoscaler/eks-nvme: "owned"  
+  - name: C6g_8
+    instanceType: c6.8xlarge
+    availabilityZones: [{REGION}"a"] 
+    preBootstrapCommands:
+      - "IDX=1;for DEV in /dev/nvme[1-9]n1;do sudo mkfs.xfs ${DEV}; sudo mkdir -p /local${IDX}; sudo echo ${DEV} /local${IDX} xfs defaults,noatime 1 2 >> /etc/fstab; IDX=$((${IDX} + 1)); done"
+      - "sudo mount -a"
+      - "sudo chown ec2-user:ec2-user /local*"
+    volumeSize: 20
+    volumeType: gp3
+    minSize: 1
+    desiredCapacity: 1
+    additionalVolumes:
+      - volumeName: '/dev/sdf'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400
+      - volumeName: '/dev/sdg'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400  
+      - volumeName: '/dev/sdh'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400    
+      - volumeName: '/dev/sdi'
+        volumeSize: 128
+        volumeType: io1
+        volumeIOPS: 6400  
+    maxSize: 30
+    tags:
+      # required for cluster-autoscaler auto-discovery
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/eks-nvme: "owned"    
   - name: C7g_8
     instanceType: c7g.8xlarge
-    availabilityZones: ["us-east-1b"]
+    availabilityZones: [{REGION}"b"]
     preBootstrapCommands:
       - "IDX=1;for DEV in /dev/nvme[1-9]n1;do sudo mkfs.xfs ${DEV}; sudo mkdir -p /local${IDX}; sudo echo ${DEV} /local${IDX} xfs defaults,noatime 1 2 >> /etc/fstab; IDX=$((${IDX} + 1)); done"
       - "sudo mount -a"
