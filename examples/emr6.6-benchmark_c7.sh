@@ -12,7 +12,7 @@ export ECR_URL="$ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com"
 
 aws emr-containers start-job-run \
   --virtual-cluster-id $VIRTUAL_CLUSTER_ID \
-  --name em66-c7-8xl \
+  --name em66-c7-4xl \
   --execution-role-arn $EMR_ROLE_ARN \
   --release-label emr-6.6.0-latest \
   --job-driver '{
@@ -32,8 +32,8 @@ aws emr-containers start-job-run \
           "spark.executor.memoryOverhead": "2G",
           "spark.network.timeout": "2000s",
           "spark.executor.heartbeatInterval": "300s",
-          "spark.kubernetes.executor.podNamePrefix": "emr-eks-tpcds-c7g8",
-          "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "C7g_8",
+          "spark.kubernetes.executor.podNamePrefix": "emr-eks-tpcds-c7g4",
+          "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "C7g_4",
 
 
         "spark.ui.prometheus.enabled":"true",
