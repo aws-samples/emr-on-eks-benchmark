@@ -1,6 +1,6 @@
 ## Spark on Kubernetes benchmark utility
 
-This repository is used to benchmark Spark performance on Kubernetes. 
+This repository provides a general tool to benchmark Spark performance. 
 If you want to use the [prebuild docker image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/emr-on-eks-benchmark) based on a prebuild OSS spark_3.1.2_hadoop_3.3.1, you can skip the [build section](#Build-benchmark-utility-docker-image) and jump to [Run Benchmark](#Run-Benchmark) directly. If you want to build your own, follow the steps in the [build section](#Build-benchmark-utility-docker-image).
 
 ## Prerequisite
