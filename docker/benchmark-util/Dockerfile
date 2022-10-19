@@ -13,16 +13,16 @@ RUN yum update -y && \
     make OS=LINUX
 
 
-FROM mozilla/sbt:8u292_1.5.4 as sbt
-ARG SPARK_VERSION=3.1.2
+FROM mozilla/sbt:8u292_1.5.4 as sbtenv
 
-# Build the Databricks SQL perf library
-RUN git clone -b spark-3.2.0 --single-branch https://github.com/aws-samples/emr-on-eks-benchmark.git /tmp/emr-on-eks-benchmark && \
-    cd /tmp/emr-on-eks-benchmark/spark-sql-perf/ && \
-    sbt +package   
+# Build the Databricks SQL perf library from the local Spark version
+RUN git clone https://github.com/aws-samples/emr-on-eks-benchmark.git /tmp/emr-on-eks-benchmark && \
+    rm -rf /tmp/emr-on-eks-benchmark/spark-sql-perf
+ADD ../../spark-sql-perf /tmp/emr-on-eks-benchmark/spark-sql-perf
+RUN cd /tmp/emr-on-eks-benchmark/spark-sql-perf/ && sbt +package   
      
 # Use the compiled Databricks SQL perf library to build benchmark utility
-RUN cd /tmp/emr-on-eks-benchmark/ && mkdir /tmp/emr-on-eks-benchmark/benchmark/libs \
+RUN cd /tmp/emr-on-eks-benchmark/ && mkdir -p /tmp/emr-on-eks-benchmark/benchmark/libs \
 && cp /tmp/emr-on-eks-benchmark/spark-sql-perf/target/scala-2.12/*.jar /tmp/emr-on-eks-benchmark/benchmark/libs \
 && cd /tmp/emr-on-eks-benchmark/benchmark && sbt assembly
 
@@ -30,7 +30,7 @@ FROM ${SPARK_BASE_IMAGE}
 USER root
 
 COPY --from=tpc-toolkit /tmp/tpcds-kit/tools /opt/tpcds-kit/tools
-COPY --from=sbt /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
+COPY --from=sbtenv /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
 
 # # Use hadoop user and group 
 USER hadoop:hadoop
