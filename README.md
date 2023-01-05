@@ -1,6 +1,6 @@
 ## Spark on Kubernetes benchmark utility
 
-This repository provides a general tool to benchmark Spark performance. 
+This repository provides a general tool to benchmark Spark performance.
 If you want to use the [prebuild docker image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/emr-on-eks-benchmark) based on a prebuild OSS spark_3.1.2_hadoop_3.3.1, you can skip the [build section](#Build-benchmark-utility-docker-image) and jump to [Run Benchmark](#Run-Benchmark) directly. If you want to build your own, follow the steps in the [build section](#Build-benchmark-utility-docker-image).
 
 ## Prerequisite
@@ -64,7 +64,7 @@ aws ecr create-repository --repository-name spark --image-scanning-configuration
 docker build -t $ECR_URL/spark:3.1.2_hadoop_3.3.1 -f docker/hadoop-aws-3.3.1/Dockerfile --build-arg HADOOP_VERSION=3.3.1 --build-arg SPARK_VERSION=3.1.2 .
 docker push $ECR_URL/spark:3.1.2_hadoop_3.3.1
 
-# Build benchmark utility based on the Spark 
+# Build benchmark utility based on the Spark
 docker build -t $ECR_URL/eks-spark-benchmark:3.1.2 -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$ECR_URL/spark:3.1.2_hadoop_3.3.1 .
 ```
 
@@ -116,20 +116,52 @@ bash examples/emr6.5-benchmark.sh
 ```
 ### Benchmark for EMR on EC2
 Few notes for the set up:
-1. Use the same instance type c5d.9xlarge as in the EKS cluster. 
-2. If choosing an EBS-backed instance, check the [default instance storage setting](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-storage.html) by EMR on EC2, and attach the same number of EBS volumes to your EKS cluster before running EKS related benchmarks. 
+1. Use the same instance type c5d.9xlarge as in the EKS cluster.
+2. If choosing an EBS-backed instance, check the [default instance storage setting](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-storage.html) by EMR on EC2, and attach the same number of EBS volumes to your EKS cluster before running EKS related benchmarks.
 
-The benchmark utility app was compiled to a jar file during an [automated GitHub workflow](https://github.com/aws-samples/emr-on-eks-benchmark/actions/workflows/relase-package.yaml) process. The quickest way to get the jar is from a running Kubernetes container.
+The benchmark utility app was compiled to a jar file during an [automated GitHub workflow](https://github.com/aws-samples/emr-on-eks-benchmark/actions/workflows/relase-package.yaml) process. If you already have a running Kubernetes container, the quickest way to get the jar is using `kubectl cp` command as shown below:
 ```bash
 # Download the jar and ignore the warning message
 kubectl cp oss/oss-spark-tpcds-exec-1:/opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar eks-spark-benchmark-assembly-1.0.jar
+```
+However if you are running a benchmark just for EMR on EC2, you probably don\'t have a running container. In this scenario, it might be easier to just run the benchmark image as a local docker container and copy the jar file into your local directory.
+
+To do this open two terminals. In the first terminal run a docker container from the image built in the previous step. In the example below we give it a name `spark-benchmark` using the `--name` argument.
+
+```bash
+docker run --name spark-benchmark -it $ECR_URL/eks-spark-benchmark:3.1.2 bash
+```
+This should start a bash prompt in your spark-benchmark docker container. If the build was successful, inside the bash prompt in your docker container, you should see a jar file named `eks-spark-benchmark-assembly-1.0.jar` in the `$SPARK_HOME/examples/jars` directory as shown in the example below:
+
+```bash
+hadoop@9ca5b2afe778:/opt/spark/work-dir$ pwd
+/opt/spark/work-dir
+hadoop@9ca5b2afe778:/opt/spark/work-dir$ cd ../examples/jars
+hadoop@9ca5b2afe778:/opt/spark/examples/jars$ ls
+eks-spark-benchmark-assembly-1.0.jar  scopt_2.12-3.7.1.jar  spark-examples_2.12-3.3.0.jar
+```
+
+On another terminal in Cloud9 running the `docker ps` command shows our running container. Here is an example:
+
+```bash
+sekar:~/environment $ docker ps
+CONTAINER ID   IMAGE                                                                    COMMAND                  CREATED         STATUS         PORTS     NAMES
+9ca5b2afe778   012345678901.dkr.ecr.us-east-1.amazonaws.com/eks-spark-benchmark:3.3.0   "/opt/entrypoint.sh …"   7 seconds ago   Up 6 seconds             spark-benchmark
+```
+
+You will see your account number in place of `012345678901`
+
+Now you can copy the eks-spark-benchmark-assembly-1.0.jar file from the docker container into your local directory using `docker cp` command as shown below:
+
+```bash
+docker cp spark-benchmark:/opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar ./spark-benchmark-assembly-3.3.0.jar
 
 # Upload to s3
 S3BUCKET=<S3_BUCKET_HAS_TPCDS_DATASET>
 aws s3 cp eks-spark-benchmark-assembly-1.0.jar s3://$S3BUCKET
 ```
 
-Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`: 
+Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`:
 ```bash
 # Step type: Spark Application
 # JAR location: s3://$S3BUCKET/eks-spark-benchmark-assembly-1.0.jar
