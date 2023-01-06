@@ -134,7 +134,6 @@ hadoop@9ca5b2afe778: ls -alh /opt/spark/examples/jars/eks-spark-benchmark-assemb
 Keep the container running then go to the second terminal, run the command to copy the jar file from the container to your local directory:
 ```bash
 docker cp spark-benchmark:/opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar .
-```
 
 # Upload to s3
 S3BUCKET=<S3_BUCKET_HAS_TPCDS_DATASET>
