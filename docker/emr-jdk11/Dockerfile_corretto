@@ -1,0 +1,19 @@
+FROM 021732063925.dkr.ecr.us-west-2.amazonaws.com/eks-spark-benchmark:emr6.10_jdk8
+USER root
+
+# RUN amazon-linux-extras enable nginx1 \
+# && rpm --import https://yum.corretto.aws/corretto.key \
+# && curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
+RUN yum update -y \
+&& amazon-linux-extras disable corretto8 \
+# && rpm -qa | grep -E "openjdk|corretto" | xargs  yum -y remove \
+&& rpm -qa | grep corretto | xargs  yum -y remove \
+# to keep hadoop-lzo dependency
+&& rpm -e --nodeps java-1.8.0-openjdk-headless \ 
+&& yum install -y java-11-amazon-corretto \
+&& yum clean all
+
+
+# RUN alternatives --set java  /usr/lib/jvm/$(ls /usr/lib/jvm | grep corretto | cut -f 3)/bin/java
+# # Use hadoop user and group 
+USER hadoop:hadoop

@@ -32,4 +32,3 @@ COPY --from=sbt /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPA
 
 # # Use hadoop user and group 
 USER hadoop:hadoop
-
