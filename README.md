@@ -18,12 +18,10 @@ sudo installer -pkg ./AWSCLIV2.pkg -target /
 aws --version
 rm AWSCLIV2.pkg
 ```
-- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/) for Linux or Windows.( >= 1.26.4 )
+- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) for Linux or Windows.( >= 1.26.4 )
 ```bash
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
-chmod +x ./kubectl
-sudo mv ./kubectl /usr/local/bin/kubectl && export PATH=/usr/local/bin:$PATH
-sudo chown root: /usr/local/bin/kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 kubectl version --short --client
 ```
 - Helm CLI ( >= 3.2.1 )
