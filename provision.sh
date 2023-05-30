@@ -9,7 +9,7 @@
 export OSS_SPARK_SVCACCT_NAME=oss
 export OSS_NAMESPACE=oss
 export EMR_NAMESPACE=emr
-export EKS_VERSION=1.21
+export EKS_VERSION=1.26
 export EMRCLUSTER_NAME=emr-on-$EKSCLUSTER_NAME
 export ROLE_NAME=${EMRCLUSTER_NAME}-execution-role
 export ACCOUNTID=$(aws sts get-caller-identity --query Account --output text)
@@ -193,7 +193,7 @@ autoDiscovery:
     clusterName: $EKSCLUSTER_NAME
 awsRegion: $AWS_REGION
 image:
-    tag: v1.21.1
+    tag: v1.26.3
 nodeSelector:
     app: sparktest    
 podAnnotations:
