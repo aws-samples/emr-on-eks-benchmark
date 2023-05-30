@@ -213,7 +213,8 @@ helm install nodescaler autoscaler/cluster-autoscaler --namespace kube-system --
 
 # Install Spark-Operator for the OSS Spark test
 helm repo add spark-operator https://googlecloudplatform.github.io/spark-on-k8s-operator
-helm install -n $OSS_NAMESPACE spark-operator spark-operator/spark-operator --version 1.1.6 \
+helm repo update
+helm install -n $OSS_NAMESPACE spark-operator spark-operator/spark-operator --version 1.1.27 \
   --set serviceAccounts.spark.create=false --set metrics.enable=false --set webhook.enable=true --set webhook.port=443 --debug
 
 echo "============================================================================="
