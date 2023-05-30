@@ -5,20 +5,20 @@ If you want to use the [prebuild docker image](https://github.com/aws-samples/em
 
 ## Prerequisite
 
-- eksctl is installed
+- eksctl is installed ( >= 0.143.0)
 ```bash
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
 sudo mv -v /tmp/eksctl /usr/local/bin
 eksctl version
 ```
-- Update AWS CLI to the latest (requires aws cli version >= 2.1.14) on macOS. Check out the [link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) for Linux or Windows
+- Update AWS CLI to the latest (requires aws cli version >= 2.11.23) on macOS. Check out the [link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) for Linux or Windows
 ```bash
 curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
 sudo installer -pkg ./AWSCLIV2.pkg -target /
 aws --version
 rm AWSCLIV2.pkg
 ```
-- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/) for Linux or Windows.
+- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/) for Linux or Windows.( >= 1.26.4 )
 ```bash
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
 chmod +x ./kubectl
@@ -26,7 +26,7 @@ sudo mv ./kubectl /usr/local/bin/kubectl && export PATH=/usr/local/bin:$PATH
 sudo chown root: /usr/local/bin/kubectl
 kubectl version --short --client
 ```
-- Helm CLI
+- Helm CLI ( >= 3.2.1 )
 ```bash
 curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 helm version --short
