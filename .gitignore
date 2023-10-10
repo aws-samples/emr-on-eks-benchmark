@@ -41,6 +41,8 @@ tmp/
 local.properties
 .loadpath
 .bsp
+.scala-build
+.metals
 
 ##########################
 ## NetBeans
