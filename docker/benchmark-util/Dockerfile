@@ -13,6 +13,7 @@ RUN yum update -y && \
     make OS=LINUX
 
 
+
 FROM mozilla/sbt:8u292_1.5.4 as sbtenv
 
 # Build the Databricks SQL perf library from the local Spark version
@@ -36,4 +37,3 @@ COPY --from=sbtenv /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${
 
 # # Use hadoop user and group 
 USER hadoop:hadoop
-

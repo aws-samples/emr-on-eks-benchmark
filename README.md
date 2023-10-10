@@ -1,32 +1,30 @@
 ## Spark on Kubernetes benchmark utility
 
-This repository is used to benchmark Spark performance on Kubernetes. 
+This repository provides a general tool to benchmark Spark performance.
 If you want to use the [prebuild docker image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/emr-on-eks-benchmark) based on a prebuild OSS spark_3.1.2_hadoop_3.3.1, you can skip the [build section](#Build-benchmark-utility-docker-image) and jump to [Run Benchmark](#Run-Benchmark) directly. If you want to build your own, follow the steps in the [build section](#Build-benchmark-utility-docker-image).
 
 ## Prerequisite
 
-- eksctl is installed
+- eksctl is installed ( >= 0.143.0)
 ```bash
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
 sudo mv -v /tmp/eksctl /usr/local/bin
 eksctl version
 ```
-- Update AWS CLI to the latest (requires aws cli version >= 2.1.14) on macOS. Check out the [link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) for Linux or Windows
+- Update AWS CLI to the latest (requires aws cli version >= 2.11.23) on macOS. Check out the [link](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) for Linux or Windows
 ```bash
 curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
 sudo installer -pkg ./AWSCLIV2.pkg -target /
 aws --version
 rm AWSCLIV2.pkg
 ```
-- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/) for Linux or Windows.
+- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) for Linux or Windows.( >= 1.26.4 )
 ```bash
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
-chmod +x ./kubectl
-sudo mv ./kubectl /usr/local/bin/kubectl && export PATH=/usr/local/bin:$PATH
-sudo chown root: /usr/local/bin/kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 kubectl version --short --client
 ```
-- Helm CLI
+- Helm CLI ( >= 3.2.1 )
 ```bash
 curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 helm version --short
@@ -64,7 +62,7 @@ aws ecr create-repository --repository-name spark --image-scanning-configuration
 docker build -t $ECR_URL/spark:3.1.2_hadoop_3.3.1 -f docker/hadoop-aws-3.3.1/Dockerfile --build-arg HADOOP_VERSION=3.3.1 --build-arg SPARK_VERSION=3.1.2 .
 docker push $ECR_URL/spark:3.1.2_hadoop_3.3.1
 
-# Build benchmark utility based on the Spark 
+# Build benchmark utility based on the Spark
 docker build -t $ECR_URL/eks-spark-benchmark:3.1.2 -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$ECR_URL/spark:3.1.2_hadoop_3.3.1 .
 ```
 
@@ -116,20 +114,31 @@ bash examples/emr6.5-benchmark.sh
 ```
 ### Benchmark for EMR on EC2
 Few notes for the set up:
-1. Use the same instance type c5d.9xlarge as in the EKS cluster. 
-2. If choosing an EBS-backed instance, check the [default instance storage setting](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-storage.html) by EMR on EC2, and attach the same number of EBS volumes to your EKS cluster before running EKS related benchmarks. 
+1. Use the same instance type c5d.9xlarge as in the EKS cluster.
+2. If choosing an EBS-backed instance, check the [default instance storage setting](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-storage.html) by EMR on EC2, and attach the same number of EBS volumes to your EKS cluster before running EKS related benchmarks.
 
-The benchmark utility app was compiled to a jar file during an [automated GitHub workflow](https://github.com/aws-samples/emr-on-eks-benchmark/actions/workflows/relase-package.yaml) process. The quickest way to get the jar is from a running Kubernetes container.
+The benchmark utility app was compiled to a jar file during an [automated GitHub workflow](https://github.com/aws-samples/emr-on-eks-benchmark/actions/workflows/relase-package.yaml) process. If you already have a running Kubernetes container, the quickest way to get the jar is using `kubectl cp` command as shown below:
 ```bash
 # Download the jar and ignore the warning message
 kubectl cp oss/oss-spark-tpcds-exec-1:/opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar eks-spark-benchmark-assembly-1.0.jar
+```
+
+However if you are running a benchmark just for EMR on EC2, you probably don\'t have a running container. To copy the jar file from a docker container, you need two terminals. In the first terminal, spin up a docker container based on your image built:
+```bash
+docker run --name spark-benchmark -it $ECR_URL/eks-spark-benchmark:3.1.2 bash
+# you are logged in to the container now, find the jar file
+hadoop@9ca5b2afe778: ls -alh /opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar
+```
+Keep the container running then go to the second terminal, run the command to copy the jar file from the container to your local directory:
+```bash
+docker cp spark-benchmark:/opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar .
 
 # Upload to s3
 S3BUCKET=<S3_BUCKET_HAS_TPCDS_DATASET>
 aws s3 cp eks-spark-benchmark-assembly-1.0.jar s3://$S3BUCKET
 ```
 
-Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`: 
+Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`:
 ```bash
 # Step type: Spark Application
 # JAR location: s3://$S3BUCKET/eks-spark-benchmark-assembly-1.0.jar

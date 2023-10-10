@@ -9,7 +9,7 @@
 export OSS_SPARK_SVCACCT_NAME=oss
 export OSS_NAMESPACE=oss
 export EMR_NAMESPACE=emr
-export EKS_VERSION=1.21
+export EKS_VERSION=1.26
 export EMRCLUSTER_NAME=emr-on-$EKSCLUSTER_NAME
 export ROLE_NAME=${EMRCLUSTER_NAME}-execution-role
 export ACCOUNTID=$(aws sts get-caller-identity --query Account --output text)
@@ -193,7 +193,7 @@ autoDiscovery:
     clusterName: $EKSCLUSTER_NAME
 awsRegion: $AWS_REGION
 image:
-    tag: v1.21.1
+    tag: v1.26.3
 nodeSelector:
     app: sparktest    
 podAnnotations:
@@ -213,7 +213,8 @@ helm install nodescaler autoscaler/cluster-autoscaler --namespace kube-system --
 
 # Install Spark-Operator for the OSS Spark test
 helm repo add spark-operator https://googlecloudplatform.github.io/spark-on-k8s-operator
-helm install -n $OSS_NAMESPACE spark-operator spark-operator/spark-operator --version 1.1.6 \
+helm repo update
+helm install -n $OSS_NAMESPACE spark-operator spark-operator/spark-operator --version 1.1.27 \
   --set serviceAccounts.spark.create=false --set metrics.enable=false --set webhook.enable=true --set webhook.port=443 --debug
 
 echo "============================================================================="
