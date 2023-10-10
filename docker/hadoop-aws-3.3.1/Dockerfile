@@ -3,50 +3,36 @@
 FROM openjdk:8-jdk-slim AS builder
 
 # set desired spark, hadoop and kubernetes client versions
-ARG SPARK_VERSION=3.1.2
+ARG SPARK_VERSION=3.2.1
 ARG HADOOP_VERSION=3.3.1
-ARG aws_java_sdk_version=1.11.901
+# ARG aws_java_sdk_version=1.11.901
 
 # Download Spark
 ADD https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz .
-# Unzip Spark
-RUN tar -xvzf spark-${SPARK_VERSION}-bin-without-hadoop.tgz
-RUN mv spark-${SPARK_VERSION}-bin-without-hadoop spark
+RUN tar -xvzf spark-${SPARK_VERSION}-bin-without-hadoop.tgz && \
+    mv spark-${SPARK_VERSION}-bin-without-hadoop spark
 
 # Download Hadoop
 ADD http://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz .
-# Unzip Hadoop
-RUN tar -xvzf hadoop-${HADOOP_VERSION}.tar.gz
-RUN mv hadoop-${HADOOP_VERSION} hadoop
-# Delete unnecessary hadoop documentation
-RUN rm -rf hadoop/share/doc
+RUN tar -xvzf hadoop-${HADOOP_VERSION}.tar.gz && \
+    mv hadoop-${HADOOP_VERSION} hadoop && \
+    rm -rf hadoop/share/doc
 
 # Delete old aws-java-sdk and replace with newer version that supports IRSA
 WORKDIR /hadoop/share/hadoop/tools/lib
 
-RUN rm aws-java-sdk-bundle-*.jar
-ADD https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${aws_java_sdk_version}/aws-java-sdk-bundle-${aws_java_sdk_version}.jar .
+# RUN rm aws-java-sdk-bundle-*.jar
+# ADD https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${aws_java_sdk_version}/aws-java-sdk-bundle-${aws_java_sdk_version}.jar .
 
 # # Add additional jar for Hadoop S3a committer
 # ADD https://repository.cloudera.com/artifactory/cloudera-repos/org/apache/spark/spark-hadoop-cloud_2.12/3.1.1.3.1.7270.0-253/spark-hadoop-cloud_2.12-3.1.1.3.1.7270.0-253.jar .
 
-# # Add additional jar for Hive metastore support
-# ADD https://repo1.maven.org/maven2/org/apache/spark/spark-hive_2.12/${SPARK_VERSION}/spark-hive_2.12-${SPARK_VERSION}.jar .
-# ADD https://repo1.maven.org/maven2/org/apache/hive/hive-exec/3.1.1/hive-exec-3.1.1.jar .
-# ADD https://repo1.maven.org/maven2/org/apache/spark/spark-unsafe_2.12/${SPARK_VERSION}/spark-unsafe_2.12-${SPARK_VERSION}.jar .
-# ADD https://repo1.maven.org/maven2/org/apache/calcite/calcite-core/1.28.0/calcite-core-1.28.0.jar .
-# ADD https://repo1.maven.org/maven2/org/apache/thrift/libfb303/0.9.3/libfb303-0.9.3.jar .
-# RUN chmod 0644 *
-
 FROM openjdk:8-jdk-slim as final
-
 WORKDIR /opt/spark
 
 # Copy Spark from builder stage
 COPY --from=builder /spark /opt/spark
 COPY --from=builder /spark/kubernetes/dockerfiles/spark/entrypoint.sh /opt
-
-# Copy Hadoop from builder stage
 COPY --from=builder /hadoop /opt/hadoop
 
 RUN set -ex && \
@@ -79,5 +65,4 @@ ENV SPARK_USER hadoop
 
 # Set spark workdir
 WORKDIR /opt/spark/work-dir
-
 ENTRYPOINT [ "/opt/entrypoint.sh" ]
