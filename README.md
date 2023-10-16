@@ -87,8 +87,8 @@ docker push $ECR_URL/eks-spark-benchmark:emr6.5
 ```
 
 ## Run Benchmark
-### Generate the TCP-DS data
-Check the docker image name in example files, change it accordingly.
+### Generate the TCP-DS data (OPTIONAL)
+Before run the data gen job, check the docker image name in the example yaml file, change it accordingly. Alternatively, copy the 3TB data from a publicaly available dataset `s3://blogpost-sparkoneks-us-east-1/blog/BLOG_TPCDS-TEST-3T-partitioned` to your S3 bucket.
 
 ```bash
 kubectl apply -f examples/tpcds-data-generation.yaml
