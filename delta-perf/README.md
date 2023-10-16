@@ -6,110 +6,42 @@ This is a basic framework for writing benchmarks to measure Delta's performance.
 ## Running TPC-DS benchmark
 
 This TPC-DS benchmark is constructed such that you have to run the following two steps. 
-1. *Load data*: You have to create the TPC-DS database with all the Delta tables. To do that, the raw TPC-DS data has been provided as Apache Parquet files. In this step you will have to use your EMR or a Dataproc cluster to read the parquet files and rewrite them as Delta tables.
+1. *Load data*: You have to create the TPC-DS database with all the Delta tables. To do that, the raw TPC-DS data has been provided as Apache Parquet files. In this step you will use your EMR on EKS virtual cluster to read the parquet files and rewrite them as Delta tables.The catalog will be stored in RDS-based hive metastore, or use Glue catalog.
 2. *Query data*: Then, using the tables definitions in the Hive Metatore, you can run the 99 benchmark queries.   
 
-The next section will provide the detailed steps of how to setup the necessary Hive Metastore and a cluster, how to test the setup with small-scale data, and then finally run the full scale benchmark.
+The next section will provide the detailed steps of how to setup the necessary Hive Metastore and a cluster, how to test the setup with small-scale data, and then finally run the full scale benchmark. (Will provide the infra script or CFN later on)
 
 ### Configure cluster with Amazon Web Services
 
 #### Prerequisites
-- An AWS account with necessary permissions to do the following:
-  - Manage RDS instances for creating an external Hive Metastore
-  - Manage EMR clusters for running the benchmark
-  - Read and write to an S3 bucket from the EMR cluster
-- A S3 bucket which will be used to generate the TPC-DS data.
-- A machine which has access to the AWS setup and where this repository has been downloaded or cloned.
+  - A RDS instance for creating an external Hive Metastore
+  - An EMR on EKS virtual cluster for running the benchmark
+  - Read and write to an S3 bucket from EMR on EKS 
+  - A S3 bucket to store the TPC-DS data.
+  - No autoscaling in benchmarks
+  - Use instance store not EBS as storage.
 
-There are two ways to create infrastructure required for benchmarks - using provided [Terraform template](infrastructure/aws/terraform/README.md) or manually (described below).
-
-#### Create external Hive Metastore using Amazon RDS
-Create an external Hive Metastore in a MySQL database using Amazon RDS with the following specifications:
-- MySQL 8.x on a `db.m5.large`.
-- General purpose SSDs, and no Autoscaling storage.
-- Non-empty password for admin
-- Same region, VPC, subnet as those you will run the EMR cluster. See AWS docs for more guidance.
-  - *Note:* Region us-west-2 since that is what this benchmark has been most tested with.
-
-After the database is ready, note the JDBC connection details, the username and password. We will need them for the next step. Note that this step needs to be done just once. All EMR clusters can connect and reused this Hive Metastsore. 
-  
-#### Create EMR cluster
-Create an EMR cluster that connects to the external Hive Metastore.  Here are the specifications of the EMR cluster required for running benchmarks.
-- EMR with Spark and Hive (needed for writing to Hive Metastore). Choose the EMR version based on the Spark version compatible with the format. For example:
-  - For Delta 2.0 on Spark 3.2 - EMR 6.6.0
-  - For Delta 1.0 on Spark 3.1 - EMR 6.5.0
-- Master - i3.2xlarge
-- Workers - 16 x i3.2xlarge (or just 1 worker if you are just testing by running the 1GB benchmark).
-- Hive-site configuration to connect to the Hive Metastore. See [Using an external MySQL database or Amazon Aurora](https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-hive-metastore-external.html) for more details.
-- Same region, VPC, subnet as those of the Hive Metastore.
-  - *Note:* Region us-west-2 since that is what this benchmark has been most tested with.
-- No autoscaling, and default EBS storage.
-
-Once the EMR cluster is ready, note the following: 
-- Hostname of the EMR cluster master node.
-- PEM file for SSH into the master node.
-These will be needed to run the workloads in this framework. 
+#### Create rquired infrastructure
+Install the [HMS helm chart](https://github.com/aws-samples/hive-emr-on-eks/tree/main/hive-metastore-chart) in an existing EKS cluster to connect the external Hive Metastore (RDS).  
 
 #### Prepare S3 bucket
-Create a new S3 bucket (or use an existing one) which is in the same region as your EMR cluster.
+If creating a new S3 bucket (or use an existing one), it needs to be in the same region as your benchmark environment. The EMR on EKS's execution role should allow access to read/write the S3 bucket via the IRSA feature.
 
 _________________
 
 #### Input data
-The benchmark is run using the raw TPC-DS data which has been provided as Apache Parquet files. There are two
-predefined datasets of different size, 1GB and 3TB, located in `s3://devrel-delta-datasets/tpcds-2.13/tpcds_sf1_parquet/`
+The benchmark is using the raw TPC-DS data which has been provided as Apache Parquet files. There are two predefined datasets of different size, 1GB and 3TB, located in `s3://devrel-delta-datasets/tpcds-2.13/tpcds_sf1_parquet/`
 and `s3://devrel-delta-datasets/tpcds-2.13/tpcds_sf3000_parquet/`, respectively. Please keep in mind that
 `devrel-delta-datasets` bucket is configured as [Requester Pays](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ObjectsinRequesterPaysBuckets.html) bucket,
 so [access requests have to be configured properly](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ObjectsinRequesterPaysBuckets.html).
 
+Alternatively, generate your own TPCDS data by following the steps at the root directory of [this benchmark repo](https://github.com/aws-samples/emr-on-eks-benchmark/tree/main#run-benchmark).
+
 _________________
 
-### Test the cluster setup
-Navigate to your local copy of this repository and this benchmark directory. Then run the following steps.
+### The benchmark output
+After finish running the benchmark, you should be able to see some reports generated in your benchmark S3 path, something like the following:
 
-#### Run simple test workload
-Verify that you have the following information
-  - <HOST_NAME>: Cluster master node host name
-  - <PEM_FILE>: Local path to your PEM file for SSH into the master node.
-  - <SSH_USER>: The username that will be used to SSH into the master node. The username is tied to the SSH key you
-    have imported into the cloud. It defaults to `hadoop`.
-  - <BENCHMARK_PATH>: Path where tables will be created. Make sure your credentials have read/write permission to that path.
-  - <CLOUD_PROVIDER>: Currently either `gcp` or `aws`. For each storage type, different Delta properties might be added.
-    
-Then run a simple table write-read test: Run the following in your shell.
-
-```sh
-./run-benchmark.py \
-    --cluster-hostname <HOSTNAME> \
-    -i <PEM_FILE> \
-    --ssh-user <SSH_USER> \
-    --benchmark-path <BENCHMARK_PATH> \
-    --cloud-provider <CLOUD_PROVIDER> \
-    --benchmark test
-```
-
-If this works correctly, then you should see an output that look like this.
-     
-```text
->>> Benchmark script generated and uploaded
-
-...
-There is a screen on:
-12001..ip-172-31-21-247	(Detached)
-
-Files for this benchmark:
-20220126-191336-test-benchmarks.jar
-20220126-191336-test-cmd.sh
-20220126-191336-test-out.txt
->>> Benchmark script started in a screen. Stdout piped into 20220126-191336-test-out.txt.Final report will be generated on completion in 20220126-191336-test-report.json.
-```
-
-The test workload launched in a `screen` is going to run the following: 
-- Spark jobs to run a simple SQL query
-- Create a Delta table in the given location 
-- Read it back
-    
-To see whether they worked correctly, SSH into the node and check the output of 20220126-191336-test-out.txt. Once the workload terminates, the last few lines should be something like the following:
 ```text
 RESULT:
 {
@@ -140,15 +72,12 @@ RESULT:
     "durationMs" : 4795
   } ]
 }
-FILE UPLOAD: Uploaded /home/hadoop/20220126-191336-test-report.json to s3:// ...
-SUCCESS
 ```
     
-The above metrics are also written to a json file and uploaded to the given path. Please verify that both the table and report are generated in that path. 
+The above metrics are also written to a json file and uploaded to your S3 path. Please verify that both the table and report are generated in that path. 
 
 #### Run TPC-DS Benchmark
-Now that you are familiar with how the framework runs the workload, you can try running the small scale TPC-DS benchmark.
-
+Now that you are familiar with how the framework runs the workload, you can start with running the small scale TPC-DS benchmark.
 
 1. Read existing TPCDS data in parquet format, load data as Delta tables:
     ```bash
@@ -158,10 +87,10 @@ The job contains the following parameters, change them if needed:
 ```yaml
  "entryPointArguments":[
     "--format","delta",
-    "--scale-in-gb","3000",   # change it to 1 if test 1gb dataset
+    "--scale-in-gb","1",   # change it to 3000 if test 3TB dataset
     "--exclude-nulls","True",
-    "--benchmark-path","s3://'$S3BUCKET'/app_code/data/delta/tpcds_3tb_delta", # target bucket for delta data
-    "--source-path","s3://'$S3BUCKET'/BLOG_TPCDS-TEST-3T-partitioned" # source bucket where stores TPCDS data as parquet format
+    "--benchmark-path","s3://'$S3BUCKET'/app_code/data/delta/tpcds_1gb_delta", # target bucket for delta data
+    "--source-path","s3://'$S3BUCKET'/BLOG_TPCDS-TEST-1G-partitioned" # source bucket where stores raw TPCDS data as parquet format
   ]
 ```
 
@@ -169,6 +98,7 @@ The job contains the following parameters, change them if needed:
     ```bash
     ./examples/emr6.10-delta-benchmark.sh
     ```
+    
 Compare the results using the generated JSON files.
 
 _________________
