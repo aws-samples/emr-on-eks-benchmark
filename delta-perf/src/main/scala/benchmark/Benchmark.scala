@@ -103,6 +103,7 @@ abstract class Benchmark(private val conf: BenchmarkConf) {
   final protected lazy val spark = {
     val s = SparkSession.builder()
       .config("spark.ui.proxyBase", "")
+      .enableHiveSupport()
       .getOrCreate()
     log("Spark started with configuration:\n" +
       s.conf.getAll.toSeq.sortBy(_._1).map(x => x._1 + ": " + x._2).mkString("\t", "\n\t", "\n"))

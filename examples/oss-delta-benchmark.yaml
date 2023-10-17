@@ -1,0 +1,96 @@
+# // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# // SPDX-License-Identifier: MIT-0
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: oss-delta-benchmark
+  namespace: oss
+spec:
+  type: Scala
+  mode: cluster
+  image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
+  sparkVersion: 3.3.1
+  mainClass: benchmark.TPCDSBenchmark
+  mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
+  deps:
+    packages:
+      - io.delta:delta-core_2.12:2.2.0
+      - io.delta:delta-contribs_2.12:2.2.0
+      - io.delta:delta-hive_2.12:0.6.0
+  arguments:
+    # benchmark data format
+    - "--format"
+    - "delta"
+    # Scale factor (in GB)
+    - "--scale-in-gb"
+    - "3000"
+    # output location to store the target dataset and the benchmark report
+    - "--benchmark-path"
+    - "s3://$(BUCKET_PARAM)/delta"
+    # Number of iterations
+    - "--iterations"
+    - "1"
+  sparkConf:
+    "spark.network.timeout": "2000s"
+    "spark.executor.heartbeatInterval": "300s"
+    # AQE
+    # "spark.sql.adaptive.logLevel": "WARN"      
+    "spark.kubernetes.executor.podNamePrefix": "oss-delta"
+    # IRSA for S3 connection
+    "spark.hadoop.fs.s3a.aws.credentials.provider": "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"
+    "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2" 
+    "spark.executor.defaultJavaOptions": "-verbose:gc -XX:+UseParallelGC -XX:InitiatingHeapOccupancyPercent=70"
+    # Delta
+    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension"
+    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog" 
+    "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore"
+    "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083"
+    # "spark.sql.catalogImplementation": "hive"
+    # Keep pods in a single AZ and a single type of EC2 type
+    "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "delta"
+  driver:
+    initContainers:  
+    - name: volume-permission
+      image: public.ecr.aws/y4g4v0z7/busybox
+      command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
+      volumeMounts:
+        - name: spark-local-dir-1
+          mountPath: /ossdata1
+    env:
+      - name: BUCKET_PARAM
+        valueFrom:
+          configMapKeyRef:
+            name: special-config
+            key: codeBucket   
+    cores: 4
+    coreLimit: "4.1"
+    memory: "5g"
+    memoryOverhead: "1000"
+    serviceAccount: oss 
+    volumeMounts:
+      - name: spark-local-dir-1
+        mountPath: /ossdata1
+  executor:
+    initContainers:  
+    - name: volume-permission
+      image: public.ecr.aws/y4g4v0z7/busybox
+      command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
+      volumeMounts:
+        - name: spark-local-dir-1
+          mountPath: /ossdata1
+    cores: 4
+    coreLimit: "4.3"
+    memory: "6g"
+    memoryOverhead: "2g"
+    # 8 executors per node  
+    instances: 47
+    volumeMounts:
+      - name: spark-local-dir-1
+        mountPath: /ossdata1
+  volumes:
+    - name: spark-local-dir-1
+      hostPath:
+        path: /local1
+  restartPolicy:
+    type: Never

@@ -9,20 +9,18 @@ export ACCOUNTID=$(aws sts get-caller-identity --query Account --output text)
 # export EMR_ROLE_ARN=arn:aws:iam::$ACCOUNTID:role/$EMRCLUSTER_NAME-execution-role
 # export S3BUCKET=$EMRCLUSTER_NAME-$ACCOUNTID-$AWS_REGION
 export ECR_URL="$ACCOUNTID.dkr.ecr.$AWS_REGION.amazonaws.com"
-# "spark.hadoop.hive.metastore.client.factory.class":"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory",
-          # "spark.hive.metastore.catalog.spark_catalog": "hive",      
-          # "spark.benchmarkId": "delta-data-gen",
-          
+# export benchmarkId=`date +"%Y%m%d-%H%M%S"`
+# "spark.benchmarkId": "'$benchmarkId'
 aws emr-containers start-job-run \
 --virtual-cluster-id $VIRTUAL_CLUSTER_ID \
---name delta-generated-3TB-enablehive \
+--name delta-generated-3T-hms-execoh \
 --execution-role-arn $EMR_ROLE_ARN \
 --release-label emr-6.10.0-latest \
 --job-driver '{
   "sparkSubmitJobDriver": {
       "entryPoint": "local:///usr/lib/spark/examples/delta/delta-benchmarks.jar",
-      "entryPointArguments":["--format","delta","--scale-in-gb","3000","--exclude-nulls","True","--benchmark-path","s3://'$S3BUCKET'/delta","--source-path","s3://'$S3BUCKET'/BLOG_TPCDS-TEST-3T-partitioned"],
-      "sparkSubmitParameters": "--jars local:///usr/share/aws/delta/lib/delta-core.jar,local:///usr/share/aws/delta/lib/delta-storage.jar,local:///usr/share/aws/delta/lib/delta-storage-s3-dynamodb.jar --class benchmark.TPCDSDataLoad --conf spark.driver.cores=10 --conf spark.driver.memory=10g --conf spark.executor.cores=11 --conf spark.executor.memory=15g  --conf spark.executor.instances=26"}}' \
+      "entryPointArguments":["--format","delta","--scale-in-gb","3000","--db-name","emrdelta","--exclude-nulls","True","--benchmark-path","s3://'$S3BUCKET'/delta","--source-path","s3://'$S3BUCKET'/BLOG_TPCDS-TEST-3T-partitioned"],
+      "sparkSubmitParameters": "--jars local:///usr/share/aws/delta/lib/delta-core.jar,local:///usr/share/aws/delta/lib/delta-storage.jar,https://repo1.maven.org/maven2/io/delta/delta-hive_2.12/0.6.0/delta-hive_2.12-0.6.0.jar,https://repo1.maven.org/maven2/io/delta/delta-contribs_2.12/2.2.0/delta-contribs_2.12-2.2.0.jar --class benchmark.TPCDSDataLoad --conf spark.driver.cores=10 --conf spark.driver.memory=10g --conf spark.executor.cores=11 --conf spark.executor.memory=15g  --conf spark.executor.instances=26"}}' \
 --configuration-overrides '{
     "applicationConfiguration": [
       {
@@ -31,13 +29,13 @@ aws emr-containers start-job-run \
           "spark.kubernetes.container.image": "'$ECR_URL'/eks-spark-benchmark:emr6.10-delta",
           "spark.kubernetes.driver.podTemplateFile": "s3://'$S3BUCKET'/app_code/driver-pod-template.yaml",
           "spark.kubernetes.executor.podTemplateFile": "s3://'$S3BUCKET'/app_code/executor-pod-template.yaml",
+          "spark.executor.memoryOverhead": "2G",
 
           "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
           "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
           "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore",
           "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083",
-          "spark.sql.warehouse.dir": "s3://'$S3BUCKET'/delta",
-          "spark.sql.catalogImplementation": "hive"
+          "spark.sql.warehouse.dir": "s3://'$S3BUCKET'/delta"
          }}
     ], 
     "monitoringConfiguration": {

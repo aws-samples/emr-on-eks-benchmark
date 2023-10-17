@@ -1,0 +1,91 @@
+# // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# // SPDX-License-Identifier: MIT-0
+apiVersion: "sparkoperator.k8s.io/v1beta2"
+kind: SparkApplication
+metadata:
+  name: delta-benchmark-oss
+  namespace: oss
+spec:
+  type: Scala
+  mode: cluster
+  image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
+  sparkVersion: 3.3.1
+  mainClass: benchmark.TPCDSDataLoad
+  mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
+  deps:
+    packages:
+      - io.delta:delta-core_2.12:2.2.0
+      - io.delta:delta-contribs_2.12:2.2.0
+      - io.delta:delta-storage:2.2.0
+      - io.delta:delta-hive_2.12:0.6.0
+  arguments:
+    # benchmark data format
+    - "--format"
+    - "delta"
+    # Scale factor (in GB)
+    - "--scale-in-gb"
+    - "3000"
+    - "--db-name"
+    - "ossdelta"
+    - "--exclude-nulls"
+    - "True"
+    # output location to store the target dataset and the benchmark report
+    - "--benchmark-path"
+    - "s3a://$(BUCKET_PARAM)/ossdelta"
+    - "--source-path"
+    - "s3a://$(BUCKET_PARAM)/BLOG_TPCDS-TEST-3T-partitioned"
+  sparkConf:
+    "spark.network.timeout": "2000s"
+    "spark.executor.heartbeatInterval": "300s"
+    # IRSA for S3 connection
+    "spark.hadoop.fs.s3a.aws.credentials.provider": "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"
+    "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    # Delta
+    "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension"
+    "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog" 
+    "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore"
+    "spark.hadoop.hive.metastore.client.factory.class":"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory",
+    # Keep pods in a single AZ and a single EC2 type
+    "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "delta"
+  driver:
+    initContainers:  
+    - name: volume-permission
+      image: public.ecr.aws/y4g4v0z7/busybox
+      command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
+      volumeMounts:
+        - name: spark-local-dir-1
+          mountPath: /ossdata1
+    env:
+      - name: BUCKET_PARAM
+        valueFrom:
+          configMapKeyRef:
+            name: special-config
+            key: codeBucket   
+    cores:  10
+    coreLimit: "10.1"
+    memory: "10g"
+    serviceAccount: oss 
+    volumeMounts:
+      - name: spark-local-dir-1
+        mountPath: /ossdata1
+  executor:
+    initContainers:  
+    - name: volume-permission
+      image: public.ecr.aws/y4g4v0z7/busybox
+      command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
+      volumeMounts:
+        - name: spark-local-dir-1
+          mountPath: /ossdata1
+    cores: 11
+    coreLimit: "11.3"
+    memory: "15g"
+    instances: 26
+    volumeMounts:
+      - name: spark-local-dir-1
+        mountPath: /ossdata1
+  volumes:
+    - name: spark-local-dir-1
+      hostPath:
+        path: /local1
+  restartPolicy:
+    type: Never

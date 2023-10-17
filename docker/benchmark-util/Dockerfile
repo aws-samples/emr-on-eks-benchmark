@@ -5,13 +5,11 @@ ARG SPARK_BASE_IMAGE=public.ecr.aws/w5m3x7g4/spark:3.1.2_hadoop_3.3.1
 FROM amazonlinux:2 as tpc-toolkit
 
 ENV TPCDS_KIT_VERSION "master"
-
 RUN yum update -y && \
     yum group install -y "Development Tools" && \
     git clone https://github.com/databricks/tpcds-kit.git -b ${TPCDS_KIT_VERSION} /tmp/tpcds-kit && \
     cd /tmp/tpcds-kit/tools && \
     make OS=LINUX
-
 
 
 FROM mozilla/sbt:8u292_1.5.4 as sbtenv
@@ -41,8 +39,5 @@ USER root
 COPY --from=tpc-toolkit /tmp/tpcds-kit/tools /opt/tpcds-kit/tools
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/delta-perf/target/scala-2.12/*jar ${SPARK_HOME}/examples/delta/delta-benchmarks.jar
-# COPY --from=sbtenv /tmp/emr-on-eks-benchmark/delta-perf/scripts/ ${SPARK_HOME}/examples/delta/scripts/
-# COPY --from=sbtenv /tmp/emr-on-eks-benchmark/delta-perf/run-benchmark.py ${SPARK_HOME}/examples/delta/
-# RUN chown -R hadoop:hadoop ${SPARK_HOME}/examples/delta
 # # Use hadoop user and group 
 USER hadoop:hadoop

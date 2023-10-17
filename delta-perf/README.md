@@ -11,29 +11,42 @@ This TPC-DS benchmark is constructed such that you have to run the following two
 
 The next section will provide the detailed steps of how to setup the necessary Hive Metastore and a cluster, how to test the setup with small-scale data, and then finally run the full scale benchmark. (Will provide the infra script or CFN later on)
 
-### Configure cluster with Amazon Web Services
+_________________
+
+### Setup Infrastructure in AWS
 
 #### Prerequisites
-  - A RDS instance for creating an external Hive Metastore, if Glue Catalog is not accessible
+  - A custom Docker image for the benchmark. Build seperate images for OSS Spark and EMR respectively. See the steps at the [root directory of this project](https://github.com/aws-samples/emr-on-eks-benchmark#build-benchmark-utility-docker-image)
+  - A RDS instance for hosting an external Hive Metastore, can ignore this step if using Glue Catalog
   - An EMR on EKS virtual cluster for running the benchmark
-  - Read and write to an S3 bucket from EMR on EKS 
-  - A S3 bucket to store the TPC-DS data.
-  - No autoscaling in benchmarks
-  - Use instance store not EBS as storage.
+  - A S3 bucket to store the TPC-DS data and benchmark reports
+  - No autoscaling (DRA) in benchmark
+  - Use instance store as the scratch space storage
 
-#### Create rquired infrastructure
-Install the [HMS helm chart](https://github.com/aws-samples/hive-emr-on-eks/tree/main/hive-metastore-chart) on an existing EKS cluster to connect the external Hive Metastore (RDS). If you can use Glue catalog, ignore the RDS and HMS installation. 
+#### Create rquired Hive Metastore
+The Delta benchmark will create external tables against a Hive metastore. 2 Options to setup the Hive metastore:
 
-To connect Hive metastore in Delta, the following Spark configs are neccessary:
+**Option 1: RDS-based remote Hive Metastore**
+* Provision an mySQL RDS instance
+* Install the [HMS helm chart](https://github.com/aws-samples/hive-emr-on-eks/tree/main/hive-metastore-chart) on an existing EKS cluster connecting to the external Hive Metastore (RDS). 
+
+To connect Hive metastore in Delta app, the following Spark configs are neccessary:
 ```
 "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083",
-"spark.sql.catalogImplementation": "hive"   # The setting is a must if you can't access Spark code to add the hive support like this SparkSession.builder.enableHiveSupport().getOrCreate()
-# If using Glue catalog, use this setting and remove the thrift setting above
-# "spark.hadoop.hive.metastore.client.factory.class":"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+"spark.sql.warehouse.dir": "s3://'$S3BUCKET'/delta"
+```
+
+**Option 2: use Glue Catalog as Hive Metastore**
+If you chose this option, ignore the RDS and HMS setup. 
+
+To connect Glue Catalog in Delta app, the following Spark configs are neccessary:
+```
+# replace the HMS thrift setting by this
+"spark.hadoop.hive.metastore.client.factory.class":"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
 ```
 
 #### Prepare S3 bucket
-If creating a new S3 bucket (or use an existing one), it needs to be in the same region as your benchmark environment. The EMR on EKS's execution role should allow access to read/write the S3 bucket via the IRSA feature.
+If creating a new S3 bucket (or use an existing one), it needs to be in the same region as your benchmark environment. The EMR on EKS's execution role should allow access to read/write the S3 bucket via EKS's IRSA feature.
 
 _________________
 
@@ -84,12 +97,12 @@ RESULT:
     
 The above metrics are also written to a json file and uploaded to your S3 path. Please verify that both the table and report are generated in that path. 
 
-#### Run TPC-DS Benchmark
+## Run TPC-DS Benchmark
 Now that you are familiar with how the framework runs the workload, you can start with running the small scale 1GB TPC-DS benchmark.
 
 1. Read existing TPCDS data in parquet format, load data as Delta tables:
     ```bash
-      ./examples/emr6.10-delta-data-generation.sh 
+      ./examples/emr6.10-delta-data-gen.sh 
     ```
 The job contains the following parameters, change them if needed:
 ```yaml
@@ -97,7 +110,7 @@ The job contains the following parameters, change them if needed:
     "--format","delta",
     "--scale-in-gb","1",   # change to 3000 if test 3TB dataset
     "--exclude-nulls","True",
-    "--benchmark-path","s3://'$S3BUCKET'/app_code/data/delta/tpcds_1gb_delta", # target bucket for delta data
+    "--benchmark-path","s3://'$S3BUCKET'/app_code/data/delta/tpcds_1gb_delta", # target bucket for delta data and generate the benchmark report
     "--source-path","s3://'$S3BUCKET'/BLOG_TPCDS-TEST-1G-partitioned" # source bucket where stores raw TPCDS data as parquet format
   ]
 ```
