@@ -58,6 +58,11 @@ object TPCDSBenchmarkConf {
         .valueName("<cloud storage path>")
         .action((x, c) => c.copy(benchmarkPath = Some(x)))
         .text("Cloud path to be used for creating table and generating reports"),
+      opt[String]("db-name")
+        .optional()
+        .valueName("<database name>")
+        .action((x, c) => c.copy(userDefinedDbName = Some(x)))
+        .text("Name of the target database to create with TPC-DS tables in necessary format"),  
       opt[String]("iterations")
         .optional()
         .valueName("<number of iterations>")

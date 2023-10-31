@@ -2,6 +2,21 @@
 # // SPDX-License-Identifier: MIT-0
 ARG SPARK_BASE_IMAGE=public.ecr.aws/w5m3x7g4/spark:3.1.2_hadoop_3.3.1
 
+ARG java_image_tag=8-jdk-focal
+
+FROM eclipse-temurin:${java_image_tag} as cele-client
+ARG SPARK_VERSION=3.3
+
+# install maven
+RUN apt-get update && apt-get install -y git
+# build celeborn binary
+# RUN git clone https://github.com/apache/incubator-celeborn.git
+RUN git clone https://github.com/apache/incubator-celeborn.git -b v0.3.0-incubating
+WORKDIR incubator-celeborn
+RUN ./build/make-distribution.sh -Pspark-${SPARK_VERSION} && \
+    cat *.tgz | tar -xvzf - && \
+    mv apache-celeborn-*-bin /tmp/celeborn
+
 FROM amazonlinux:2 as tpc-toolkit
 
 ENV TPCDS_KIT_VERSION "master"
@@ -36,6 +51,7 @@ RUN cd /tmp/emr-on-eks-benchmark/delta-perf && sbt assembly
 FROM ${SPARK_BASE_IMAGE}
 USER root
 
+COPY --from=cele-client /tmp/celeborn/spark ${SPARK_HOME}/jars
 COPY --from=tpc-toolkit /tmp/tpcds-kit/tools /opt/tpcds-kit/tools
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/delta-perf/target/scala-2.12/*jar ${SPARK_HOME}/examples/delta/delta-benchmarks.jar

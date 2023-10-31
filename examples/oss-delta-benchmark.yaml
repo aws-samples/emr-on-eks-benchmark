@@ -14,39 +14,38 @@ spec:
   mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
   deps:
     packages:
-      - io.delta:delta-core_2.12:2.2.0
-      - io.delta:delta-contribs_2.12:2.2.0
-      - io.delta:delta-hive_2.12:0.6.0
+      - org.apache.spark:spark-hive_2.12:3.3.1
   arguments:
     # benchmark data format
     - "--format"
     - "delta"
-    # Scale factor (in GB)
+    # scale factor (in GB)
     - "--scale-in-gb"
     - "3000"
+    # hive metastore datbase name
+    - "--db-name"
+    - "ossdelta"
     # output location to store the target dataset and the benchmark report
     - "--benchmark-path"
-    - "s3://$(BUCKET_PARAM)/delta"
-    # Number of iterations
+    - "s3://$(BUCKET_PARAM)/DELTA_OSS_TPCDS-TEST-3T-RESULT/ossdelta"
+    # number of iterations
     - "--iterations"
     - "1"
   sparkConf:
+    "spark.jars": "https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.2.0/delta-core_2.12-2.2.0.jar,https://repo1.maven.org/maven2/io/delta/delta-storage/2.2.0/delta-storage-2.2.0.jar,https://repo1.maven.org/maven2/io/delta/delta-hive_2.12/0.6.0/delta-hive_2.12-0.6.0.jar,https://repo1.maven.org/maven2/io/delta/delta-contribs_2.12/2.2.0/delta-contribs_2.12-2.2.0.jar"
     "spark.network.timeout": "2000s"
     "spark.executor.heartbeatInterval": "300s"
-    # AQE
-    # "spark.sql.adaptive.logLevel": "WARN"      
-    "spark.kubernetes.executor.podNamePrefix": "oss-delta"
-    # IRSA for S3 connection
+    # "spark.log.level": "WARN"    
+    # S3a
     "spark.hadoop.fs.s3a.aws.credentials.provider": "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"
     "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
-    "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2" 
-    "spark.executor.defaultJavaOptions": "-verbose:gc -XX:+UseParallelGC -XX:InitiatingHeapOccupancyPercent=70"
-    # Delta
+     # Delta
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension"
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog" 
     "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore"
     "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083"
-    # "spark.sql.catalogImplementation": "hive"
+    "spark.sql.catalogImplementation": "hive"
+    # "spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
     # Keep pods in a single AZ and a single type of EC2 type
     "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "delta"
   driver:

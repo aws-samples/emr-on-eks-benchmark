@@ -110,7 +110,7 @@ managedNodeGroups:
     volumeType: gp2
     minSize: 1
     desiredCapacity: 1
-    maxSize: 30
+    maxSize: 70
     labels:
       app: sparktest 
     tags:

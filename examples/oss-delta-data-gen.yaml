@@ -3,7 +3,7 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: delta-benchmark-oss
+  name: oss-delta-dataload
   namespace: oss
 spec:
   type: Scala
@@ -14,10 +14,12 @@ spec:
   mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
   deps:
     packages:
-      - io.delta:delta-core_2.12:2.2.0
-      - io.delta:delta-contribs_2.12:2.2.0
-      - io.delta:delta-storage:2.2.0
-      - io.delta:delta-hive_2.12:0.6.0
+     - org.apache.spark:spark-hive_2.12:3.3.1
+    jars:  
+     - https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.2.0/delta-core_2.12-2.2.0.jar
+     - https://repo1.maven.org/maven2/io/delta/delta-storage/2.2.0/delta-storage-2.2.0.jar
+     - https://repo1.maven.org/maven2/io/delta/delta-hive_2.12/0.6.0/delta-hive_2.12-0.6.0.jar
+     - https://repo1.maven.org/maven2/io/delta/delta-contribs_2.12/2.2.0/delta-contribs_2.12-2.2.0.jar
   arguments:
     # benchmark data format
     - "--format"
@@ -25,27 +27,33 @@ spec:
     # Scale factor (in GB)
     - "--scale-in-gb"
     - "3000"
+    # hive metastore datbase name
     - "--db-name"
     - "ossdelta"
     - "--exclude-nulls"
     - "True"
     # output location to store the target dataset and the benchmark report
     - "--benchmark-path"
-    - "s3a://$(BUCKET_PARAM)/ossdelta"
+    - "s3://$(BUCKET_PARAM)/ossdelta"
     - "--source-path"
-    - "s3a://$(BUCKET_PARAM)/BLOG_TPCDS-TEST-3T-partitioned"
+    - "s3://$(BUCKET_PARAM)/BLOG_TPCDS-TEST-3T-partitioned"
   sparkConf:
+    # "spark.jars": "https://repo1.maven.org/maven2/io/delta/delta-core_2.12/2.2.0/delta-core_2.12-2.2.0.jar,https://repo1.maven.org/maven2/io/delta/delta-storage/2.2.0/delta-storage-2.2.0.jar,https://repo1.maven.org/maven2/io/delta/delta-hive_2.12/0.6.0/delta-hive_2.12-0.6.0.jar,https://repo1.maven.org/maven2/io/delta/delta-contribs_2.12/2.2.0/delta-contribs_2.12-2.2.0.jar"
     "spark.network.timeout": "2000s"
     "spark.executor.heartbeatInterval": "300s"
-    # IRSA for S3 connection
+    # "spark.log.level": "WARN"
+    # S3a
     "spark.hadoop.fs.s3a.aws.credentials.provider": "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"
-    "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
     # Delta
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension"
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog" 
     "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore"
-    "spark.hadoop.hive.metastore.client.factory.class":"com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory",
-    # Keep pods in a single AZ and a single EC2 type
+    # "spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+    "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083"
+    "spark.sql.warehouse.dir": "s3://hiveemroneks-appcode291f5ddb-1id4mwljux0fc/ossdelta/databases/ossdelta_"
+    "spark.sql.catalogImplementation": "hive"
+    # Use pods in a single AZ and a single EC2 type
     "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "delta"
   driver:
     initContainers:  
@@ -60,10 +68,9 @@ spec:
         valueFrom:
           configMapKeyRef:
             name: special-config
-            key: codeBucket   
-    cores:  10
-    coreLimit: "10.1"
-    memory: "10g"
+            key: codeBucket
+    cores:  4
+    memory: "5g"
     serviceAccount: oss 
     volumeMounts:
       - name: spark-local-dir-1
@@ -75,11 +82,11 @@ spec:
       command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
       volumeMounts:
         - name: spark-local-dir-1
-          mountPath: /ossdata1
-    cores: 11
-    coreLimit: "11.3"
-    memory: "15g"
-    instances: 26
+          mountPath: /ossdata1     
+    cores: 4
+    memory: "6g"
+    memoryOverhead: "2g"
+    instances: 47
     volumeMounts:
       - name: spark-local-dir-1
         mountPath: /ossdata1
