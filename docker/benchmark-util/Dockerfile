@@ -1,24 +1,7 @@
 # // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # // SPDX-License-Identifier: MIT-0
 ARG SPARK_BASE_IMAGE=public.ecr.aws/w5m3x7g4/spark:3.1.2_hadoop_3.3.1
-
-ARG java_image_tag=8-jdk-focal
-
-FROM eclipse-temurin:${java_image_tag} as cele-client
-ARG SPARK_VERSION=3.3
-
-# install maven
-RUN apt-get update && apt-get install -y git
-# build celeborn binary
-# RUN git clone https://github.com/apache/incubator-celeborn.git
-RUN git clone https://github.com/apache/incubator-celeborn.git -b v0.3.0-incubating
-WORKDIR incubator-celeborn
-RUN ./build/make-distribution.sh -Pspark-${SPARK_VERSION} && \
-    cat *.tgz | tar -xvzf - && \
-    mv apache-celeborn-*-bin /tmp/celeborn
-
 FROM amazonlinux:2 as tpc-toolkit
-
 ENV TPCDS_KIT_VERSION "master"
 RUN yum update -y && \
     yum group install -y "Development Tools" && \
@@ -28,7 +11,6 @@ RUN yum update -y && \
 
 
 FROM mozilla/sbt:8u292_1.5.4 as sbtenv
-
 # Build the Databricks SQL perf library from the local Spark version
 RUN git clone -b delta https://github.com/aws-samples/emr-on-eks-benchmark.git /tmp/emr-on-eks-benchmark && \
     rm -rf /tmp/emr-on-eks-benchmark/spark-sql-perf && \
@@ -51,9 +33,9 @@ RUN cd /tmp/emr-on-eks-benchmark/delta-perf && sbt assembly
 FROM ${SPARK_BASE_IMAGE}
 USER root
 
-COPY --from=cele-client /tmp/celeborn/spark ${SPARK_HOME}/jars
 COPY --from=tpc-toolkit /tmp/tpcds-kit/tools /opt/tpcds-kit/tools
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/delta-perf/target/scala-2.12/*jar ${SPARK_HOME}/examples/delta/delta-benchmarks.jar
+COPY docker/benchmark-util/aws-glue-datacatalog-spark-client-3.8.1.jar /opt/spark/examples/delta/aws-glue-datacatalog-spark-client.jar
 # # Use hadoop user and group 
 USER hadoop:hadoop

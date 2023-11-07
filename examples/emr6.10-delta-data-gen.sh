@@ -13,7 +13,7 @@ export benchmarkId=`date +"%Y%m%d-%H%M%S"`
 
 aws emr-containers start-job-run \
 --virtual-cluster-id $VIRTUAL_CLUSTER_ID \
---name delta-dataload-hms$benchmarkId \
+--name delta-dataload-glue$benchmarkId \
 --execution-role-arn $EMR_ROLE_ARN \
 --release-label emr-6.10.0-latest \
 --job-driver '{
@@ -35,8 +35,9 @@ aws emr-containers start-job-run \
           "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension",
           "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog",
           "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore",
-          "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083",
-          "spark.sql.warehouse.dir": "s3://'$S3BUCKET'/emrdelta"
+          "spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory",
+          "spark.sql.warehouse.dir": "s3://'$S3BUCKET'/emrdelta",
+          "spark.sql.catalogImplementation": "hive"
          }}
     ], 
     "monitoringConfiguration": {

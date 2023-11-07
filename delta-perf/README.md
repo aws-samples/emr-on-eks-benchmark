@@ -34,14 +34,17 @@ To setup a Hive metastore connection in a Delta application, the following Spark
 ```
 "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083",
 "spark.sql.warehouse.dir": "s3://'$S3BUCKET'/delta"
+"spark.sql.catalogImplementation": "hive"
 ```
 
 **Option 2: use Glue Catalog as Hive Metastore**
 If you chose this option, ignore the RDS and HMS setup. 
 
-To connect Glue Catalog from EMR's applications, simply replace 2 configs fron Option #1 by the single setting:
+To connect Glue Catalog from EMR's applications, simply replace the thrift config in Option #1 by glue catalog, like this:
 ```
-"spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+"spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory",
+"spark.sql.warehouse.dir": "s3://'$S3BUCKET'/delta"
+"spark.sql.catalogImplementation": "hive"
 ```
 For open source Delta apps, [compile and add this Glue Catalog client](https://github.com/awslabs/aws-glue-data-catalog-client-for-apache-hive-metastore) to your application's class path, then use the Spark config to make the connection.
 
