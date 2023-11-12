@@ -3,7 +3,7 @@ kind: ClusterConfig
 metadata:
   name: multi-arch-test
   region: {REGION}
-  version: "1.21"
+  version: "1.26"
 vpc:
   clusterEndpoints:
       publicAccess: true
@@ -92,8 +92,8 @@ managedNodeGroups:
       # required for cluster-autoscaler auto-discovery
       k8s.io/cluster-autoscaler/enabled: "true"
       k8s.io/cluster-autoscaler/eks-nvme: "owned"    
-  - name: C7g_8
-    instanceType: c7g.8xlarge
+  - name: C7g_4
+    instanceType: c7g.4xlarge
     availabilityZones: [{REGION}"b"]
     preBootstrapCommands:
       - "IDX=1;for DEV in /dev/nvme[1-9]n1;do sudo mkfs.xfs ${DEV}; sudo mkdir -p /local${IDX}; sudo echo ${DEV} /local${IDX} xfs defaults,noatime 1 2 >> /etc/fstab; IDX=$((${IDX} + 1)); done"

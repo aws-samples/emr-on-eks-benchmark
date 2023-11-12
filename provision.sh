@@ -107,7 +107,7 @@ managedNodeGroups:
     instanceType: c5d.9xlarge
     # ebs optimization is enabled by default
     volumeSize: 20
-    volumeType: gp2
+    volumeType: gp3
     minSize: 1
     desiredCapacity: 1
     maxSize: 70

@@ -8,8 +8,7 @@ metadata:
 spec:
   type: Scala
   mode: cluster
-  # image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
-  image: 021732063925.dkr.ecr.us-east-1.amazonaws.com/eks-spark-benchmark:3.3.1-delta 
+  image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
   sparkVersion: 3.3.1
   mainClass: benchmark.TPCDSDataLoad
   mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar

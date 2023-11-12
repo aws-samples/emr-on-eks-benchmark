@@ -108,7 +108,7 @@ Now that you are familiar with how the framework runs the workload, you can star
 
 1. Read existing TPCDS data in Parquet format, load data as Delta tables:
 ```bash
-./examples/emr6.10-delta-data-gen.sh 
+./examples/emr6.10-delta-data-load.sh 
 ```
 The job contains the following parameters, change them accordingly:
 ```yaml
@@ -134,7 +134,7 @@ Compare the results using the generated JSON files.
 # clean up the previous bechmark result if there is any
 aws s3 rm --recursive s3://$S3BUCKET/ossdelta/
 # run data gen test via Spark operator
-kubectl apply -f examples/oss-delta-data-gen.sh 
+kubectl apply -f examples/oss-delta-data-load.sh 
 # Read Delta tables from Hive metastore and query
 kubectl apply -f examples/oss-delta-benchmark.sh 
 ```

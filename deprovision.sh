@@ -21,6 +21,8 @@ eksctl delete cluster --name $EKSCLUSTER_NAME --region $AWS_REGION
 aws iam detach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN
 aws iam delete-role --role-name $ROLE_NAME
 aws iam delete-policy --policy-arn $POLICY_ARN
+aws iam delete-role --role-name eksctl-cluster-autoscaler-role
+
 aws s3 rm s3://$S3TEST_BUCKET --recursive
 aws s3api delete-bucket --bucket $S3TEST_BUCKET
 # uncomment it out if use ECR to store the benchmark utility

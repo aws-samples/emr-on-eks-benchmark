@@ -36,6 +36,6 @@ USER root
 COPY --from=tpc-toolkit /tmp/tpcds-kit/tools /opt/tpcds-kit/tools
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/benchmark/target/scala-2.12/*jar ${SPARK_HOME}/examples/jars/
 COPY --from=sbtenv /tmp/emr-on-eks-benchmark/delta-perf/target/scala-2.12/*jar ${SPARK_HOME}/examples/delta/delta-benchmarks.jar
-COPY docker/benchmark-util/aws-glue-datacatalog-spark-client-3.8.1.jar /opt/spark/examples/delta/aws-glue-datacatalog-spark-client.jar
+# COPY docker/benchmark-util/aws-glue-datacatalog-spark-client-3.8.1.jar /opt/spark/examples/delta/aws-glue-datacatalog-spark-client.jar
 # # Use hadoop user and group 
 USER hadoop:hadoop
