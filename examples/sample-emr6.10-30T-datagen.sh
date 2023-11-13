@@ -22,7 +22,7 @@ aws emr-containers start-job-run \
   "sparkSubmitJobDriver": {
       "entryPoint": "local:///usr/lib/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar",
       "entryPointArguments":["s3://'$S3BUCKET'/BLOG_TPCDS-TEST-30T-partitioned","/opt/tpcds-kit/tools","parquet","30000","2000","true","true","true"],
-      "sparkSubmitParameters": "--class com.amazonaws.eks.tpcds.DataGeneration --conf spark.driver.cores=4 --conf spark.driver.memory=6G  --conf spark.executor.cores=6 --conf spark.executor.memory=10G  --conf spark.executor.instances=249"}}' \
+      "sparkSubmitParameters": "--class com.amazonaws.eks.tpcds.DataGeneration --conf spark.driver.cores=6 --conf spark.driver.memory=6G  --conf spark.executor.cores=8 --conf spark.executor.memory=10G  --conf spark.executor.instances=249"}}' \
 --configuration-overrides '{
     "applicationConfiguration": [
       {
