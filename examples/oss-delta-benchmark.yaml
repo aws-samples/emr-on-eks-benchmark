@@ -3,12 +3,14 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: oss-delta-benchmark
+  name: oss-delta-benchmark-30tb
   namespace: oss
 spec:
   type: Scala
   mode: cluster
-  image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
+  # image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
+  image: 021732063925.dkr.ecr.us-east-1.amazonaws.com/eks-spark-benchmark:3.3.1-delta
+  imagePullPolicy: Always
   sparkVersion: 3.3.1
   mainClass: benchmark.TPCDSBenchmark
   mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
@@ -21,13 +23,13 @@ spec:
     - "delta"
     # scale factor (in GB)
     - "--scale-in-gb"
-    - "3000"
+    - "30000"
     # hive metastore datbase name
     - "--db-name"
     - "ossdelta"
     # output location to store the target dataset and the benchmark report
     - "--benchmark-path"
-    - "s3://$(BUCKET_PARAM)/DELTA_OSS_TPCDS-TEST-3T-RESULT/ossdelta"
+    - "s3://$(BUCKET_PARAM)/DELTA_OSS_TPCDS-TEST-30T-RESULT/ossdelta/$(BENCHMARK_ID)"
     # number of iterations
     - "--iterations"
     - "1"
@@ -43,10 +45,11 @@ spec:
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension"
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog" 
     "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore"
+    # "spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
     "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083"
     "spark.sql.catalogImplementation": "hive"
-    # "spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
-    # Keep pods in a single AZ and a single type of EC2 type
+    "spark.sql.warehouse.dir": "s3://hiveemroneks-appcode291f5ddb-1id4mwljux0fc/ossdelta/databases/ossdelta_spark_34e294decd264a02b22616274d64a2f6"
+      # Keep pods in a single AZ and a single type of EC2 type
     "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "delta"
   driver:
     initContainers:  
@@ -61,7 +64,11 @@ spec:
         valueFrom:
           configMapKeyRef:
             name: special-config
-            key: codeBucket   
+            key: codeBucket 
+      - name: BENCHMARK_ID
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['spark-app-selector']             
     cores: 4
     coreLimit: "4.1"
     memory: "5g"
@@ -78,6 +85,11 @@ spec:
       volumeMounts:
         - name: spark-local-dir-1
           mountPath: /ossdata1
+    env:
+      - name: BENCHMARK_ID
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['spark-app-selector']     
     cores: 4
     coreLimit: "4.3"
     memory: "6g"

@@ -3,12 +3,15 @@
 apiVersion: "sparkoperator.k8s.io/v1beta2"
 kind: SparkApplication
 metadata:
-  name: oss-delta-dataload
+  name: oss-delta-dataload-hms-30tb
   namespace: oss
 spec:
+  # sparkConfigMap: spark-custom-config-map
   type: Scala
   mode: cluster
-  image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
+  # image: public.ecr.aws/myang-poc/eks-spark-benchmark:3.3.1-delta
+  image: 021732063925.dkr.ecr.us-east-1.amazonaws.com/eks-spark-benchmark:3.3.1-delta
+  imagePullPolicy: Always
   sparkVersion: 3.3.1
   mainClass: benchmark.TPCDSDataLoad
   mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
@@ -20,14 +23,14 @@ spec:
      - https://repo1.maven.org/maven2/io/delta/delta-storage/2.2.0/delta-storage-2.2.0.jar
      - https://repo1.maven.org/maven2/io/delta/delta-hive_2.12/0.6.0/delta-hive_2.12-0.6.0.jar
      - https://repo1.maven.org/maven2/io/delta/delta-contribs_2.12/2.2.0/delta-contribs_2.12-2.2.0.jar
-     - local:///opt/spark/examples/delta/aws-glue-datacatalog-spark-client.jar
+    #  - local:///opt/spark/jars/aws-glue-datacatalog-spark-client.jar
   arguments:
     # benchmark data format
     - "--format"
     - "delta"
     # Scale factor (in GB)
     - "--scale-in-gb"
-    - "3000"
+    - "30000"
     # hive metastore datbase name
     - "--db-name"
     - "ossdelta"
@@ -37,7 +40,7 @@ spec:
     - "--benchmark-path"
     - "s3://$(BUCKET_PARAM)/ossdelta"
     - "--source-path"
-    - "s3://$(BUCKET_PARAM)/BLOG_TPCDS-TEST-3T-partitioned"
+    - "s3://$(BUCKET_PARAM)/BLOG_TPCDS-TEST-30T-partitioned"
   sparkConf:
     "spark.network.timeout": "2000s"
     "spark.executor.heartbeatInterval": "300s"
@@ -49,9 +52,10 @@ spec:
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension"
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog" 
     "spark.delta.logStore.class": "org.apache.spark.sql.delta.storage.S3SingleDriverLogStore"
-    # "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083"
-    "spark.hadoop.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
-    "spark.sql.warehouse.dir": "s3://hiveemroneks-appcode291f5ddb-1id4mwljux0fc/ossdelta/databases/glueoss"
+    # "spark.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+    # "spark.hive.imetastoreclient.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
+    "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083"
+    "spark.sql.warehouse.dir": "s3://hiveemroneks-appcode291f5ddb-1id4mwljux0fc/ossdelta"
     "spark.sql.catalogImplementation": "hive"
     # Use pods in a single AZ and a single EC2 type
     "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "delta"
@@ -69,6 +73,10 @@ spec:
           configMapKeyRef:
             name: special-config
             key: codeBucket
+      - name: BENCHMARK_ID
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['spark-app-selector']      
     cores:  4
     memory: "5g"
     serviceAccount: oss 
@@ -83,6 +91,11 @@ spec:
       volumeMounts:
         - name: spark-local-dir-1
           mountPath: /ossdata1     
+    env:
+      - name: BENCHMARK_ID
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['spark-app-selector']   
     cores: 4
     memory: "6g"
     memoryOverhead: "2g"

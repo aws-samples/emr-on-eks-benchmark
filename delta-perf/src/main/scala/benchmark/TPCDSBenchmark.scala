@@ -78,7 +78,7 @@ object TPCDSBenchmarkConf {
 
 class TPCDSBenchmark(conf: TPCDSBenchmarkConf) extends Benchmark(conf) {
   val queries: Map[String, String] = {
-    if (conf.scaleInGB <= 3000) TPCDSQueries3TB
+    if (conf.scaleInGB <= 30000) TPCDSQueries3TB
     else if (conf.scaleInGB == 10) TPCDSQueries10TB
     else throw new IllegalArgumentException(
       s"Unsupported scale factor of ${conf.scaleInGB} GB")

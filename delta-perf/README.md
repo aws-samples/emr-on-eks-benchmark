@@ -1,7 +1,7 @@
 # Delta Benchmarks 
 
 ## Overview
-This is a basic framework for writing benchmarks to measure Delta's performance. It is currently designed to run benchmark on Spark running in EMR with a remote hive metatore in RDS. However, it can be easily extended for other Spark-based benchmarks. To get started, first download/clone this repository in your local machine. Then you have to set up a hive metastore, generate Delta format source data based on TPCDS dataset, and run the benchmark scripts in this directory. See the next section for more details.
+This is a basic framework for writing benchmarks to measure Delta's performance. This project demostrated to run the benchmark for EMR on EKS and OSS k8s, connecting to an RDS-based Remote Hive Metatore. To get started, first download/clone this repository in your local machine. Then you have to set up a hive metastore, generate Delta format source data based on TPCDS dataset, and run the benchmark scripts in this directory. See the next section for more details.
 
 ## Running TPC-DS benchmark
 
@@ -144,15 +144,16 @@ _________________
 
 Structure of this framework's code
 - `build.sbt`, `project/`, `src/` form the SBT project which contains the Scala code that define the benchmark workload.
-    - `Benchmark.scala` is the basic interface, and `TestBenchmark.scala` is a sample implementation.
-- `run-benchmark.py` contains the specification of the benchmarks defined by name (e.g. `tpcds-3tb-delta`). Each benchmark specification is defined by the following: 
-    - Fully qualified name of the main Scala class to be started.
-    - Command line argument for the main function.
-    - Additional Maven artifact to load (example `io.delta:delta-core_2.12:1.0.0`).
-    - Spark configurations to use.
-- `scripts` has the core python scripts that are called by `run-benchmark.py`
+- `Benchmark.scala` is the basic interface
+- `TestBenchmark.scala` is a sample implementation.
 
-The script `run-benchmark.py` does the following:
-- Compile the Scala code into a uber jar.
-- Upload it to the given hostname.
-- Using ssh to the hostname, it will launch a screen and start the main class with spark-submit.
+To compile the Scala code into a uber jar, run the command:
+```bash
+cd benchmark
+sbt cleam compile
+```
+You will find the compiled jar in the directory `project/`
+
+If you are not able to compile the code in your development environment locally, or run the Delta benchmark for a docker container, simply follow the `docker build` instruction in the project's root directory. 
+
+ [This line of code in Dockerfile](https://github.com/aws-samples/emr-on-eks-benchmark/blob/87af50362c44642660ad810a1ae0643605fe11cd/docker/benchmark-util/Dockerfile#L35) will compile the scala project automatcally for you.
