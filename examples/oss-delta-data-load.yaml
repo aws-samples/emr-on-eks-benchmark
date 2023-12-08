@@ -14,7 +14,7 @@ spec:
   imagePullPolicy: Always
   sparkVersion: 3.3.1
   mainClass: benchmark.TPCDSDataLoad
-  mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
+  mainApplicationFile: local:///opt/spark/examples/otf/hudi-delta-iceberg-benchmarks.jar
   deps:
     packages:
      - org.apache.spark:spark-hive_2.12:3.3.1
@@ -38,16 +38,16 @@ spec:
     - "True"
     # output location to store the target dataset and the benchmark report
     - "--benchmark-path"
-    - "s3://$(BUCKET_PARAM)/ossdelta"
+    - "s3a://$(BUCKET_PARAM)/ossdelta"
     - "--source-path"
-    - "s3://$(BUCKET_PARAM)/BLOG_TPCDS-TEST-30T-partitioned"
+    - "s3a://$(BUCKET_PARAM)/BLOG_TPCDS-TEST-30T-partitioned"
   sparkConf:
     "spark.network.timeout": "2000s"
     "spark.executor.heartbeatInterval": "300s"
     # "spark.log.level": "WARN"
     # S3a
     "spark.hadoop.fs.s3a.aws.credentials.provider": "com.amazonaws.auth.WebIdentityTokenCredentialsProvider"
-    "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
+    "spark.hadoop.fs.s3a.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
     # Delta
     "spark.sql.extensions": "io.delta.sql.DeltaSparkSessionExtension"
     "spark.sql.catalog.spark_catalog": "org.apache.spark.sql.delta.catalog.DeltaCatalog" 
@@ -55,7 +55,7 @@ spec:
     # "spark.hive.metastore.client.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
     # "spark.hive.imetastoreclient.factory.class": "com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory"
     "spark.hive.metastore.uris" : "thrift://hive-metastore.emr.svc.cluster.local:9083"
-    "spark.sql.warehouse.dir": "s3://hiveemroneks-appcode291f5ddb-1id4mwljux0fc/ossdelta"
+    "spark.sql.warehouse.dir": "s3a://hiveemroneks-appcode291f5ddb-1id4mwljux0fc/ossdelta"
     "spark.sql.catalogImplementation": "hive"
     # Use pods in a single AZ and a single EC2 type
     "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "delta"

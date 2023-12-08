@@ -13,13 +13,13 @@ export benchmarkId=`date +"%Y%m%d-%H%M%S"`
 
 aws emr-containers start-job-run \
 --virtual-cluster-id $VIRTUAL_CLUSTER_ID \
---name delta-querydata-30tb-hms$benchmarkId \
+--name delta-querydata-10tb-hms$benchmarkId \
 --execution-role-arn $EMR_ROLE_ARN \
 --release-label emr-6.10.0-latest \
 --job-driver '{
   "sparkSubmitJobDriver": {
-      "entryPoint": "local:///usr/lib/spark/examples/delta/delta-benchmarks.jar",
-      "entryPointArguments":["--format","delta","--scale-in-gb","30000","--db-name","emrdelta","--benchmark-path","s3://'$S3BUCKET'/DELTA_EMRONEKS_TPCDS-TEST-30T-RESULT/emrdelta/'$benchmarkId'","--iterations","1"],
+      "entryPoint": "local:///usr/lib/spark/examples/otf/hudi-delta-iceberg-benchmarks.jar",
+      "entryPointArguments":["--format","delta","--scale-in-gb","10000","--db-name","emrdelta","--benchmark-path","s3://'$S3BUCKET'/DELTA_EMRONEKS_TPCDS-TEST-10T-RESULT/emrdelta/'$benchmarkId'","--iterations","1"],
       "sparkSubmitParameters": "--jars local:///usr/share/aws/delta/lib/delta-core.jar,local:///usr/share/aws/delta/lib/delta-storage.jar,https://repo1.maven.org/maven2/io/delta/delta-hive_2.12/0.6.0/delta-hive_2.12-0.6.0.jar,https://repo1.maven.org/maven2/io/delta/delta-contribs_2.12/2.2.0/delta-contribs_2.12-2.2.0.jar --class benchmark.TPCDSBenchmark --conf spark.driver.cores=4 --conf spark.driver.memory=5g --conf spark.executor.cores=4 --conf spark.executor.memory=6g --conf spark.executor.instances=47"}}' \
 --configuration-overrides '{
     "applicationConfiguration": [

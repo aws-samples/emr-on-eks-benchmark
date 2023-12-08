@@ -1,0 +1,17 @@
+apiVersion: v1
+data:
+  hive-site.xml: |
+    <configuration>
+        <property>
+            <name>hive.metastore.client.factory.class</name>
+            <value>com.amazonaws.glue.catalog.metastore.AWSGlueDataCatalogHiveClientFactory</value>
+        </property>
+        <property>
+          <name>aws.region</name>
+          <value>us-east-1</value>
+        </property>
+    </configuration>
+kind: ConfigMap
+metadata:
+  namespace: oss
+  name: spark-custom-config-map

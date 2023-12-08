@@ -13,7 +13,7 @@ spec:
   imagePullPolicy: Always
   sparkVersion: 3.3.1
   mainClass: benchmark.TPCDSBenchmark
-  mainApplicationFile: local:///opt/spark/examples/delta/delta-benchmarks.jar
+  mainApplicationFile: local:///opt/spark/examples/otf/hudi-delta-iceberg-benchmarks.jar
   deps:
     packages:
       - org.apache.spark:spark-hive_2.12:3.3.1
