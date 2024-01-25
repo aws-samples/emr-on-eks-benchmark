@@ -26,8 +26,8 @@ iam:
     attachPolicyARNs:
     - arn:aws:iam::{ACCOUNT_ID}:policy/emr-on-eks-nvme-execution-role-policy
 managedNodeGroups: 
-  - name: C5_9
-    instanceType: c5.9xlarge
+  - name: C5_4
+    instanceType: c5.4xlarge
     availabilityZones: [{REGION}"a"] 
     preBootstrapCommands:
       - "IDX=1;for DEV in /dev/nvme[1-9]n1;do sudo mkfs.xfs ${DEV}; sudo mkdir -p /local${IDX}; sudo echo ${DEV} /local${IDX} xfs defaults,noatime 1 2 >> /etc/fstab; IDX=$((${IDX} + 1)); done"

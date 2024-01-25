@@ -19,7 +19,7 @@ aws emr-containers start-job-run \
   --virtual-cluster-id $VIRTUAL_CLUSTER_ID \
   --name emr610-JDK8 \
   --execution-role-arn $EMR_ROLE_ARN \
-  --release-label emr-6.9.0-latest \
+  --release-label emr-6.10.0-latest \
   --retry-policy-configuration '{"maxAttempts": 5}' \
   --job-driver '{
   "sparkSubmitJobDriver": {
@@ -34,13 +34,11 @@ aws emr-containers start-job-run \
           "spark.kubernetes.container.image": "'$ECR_URL'/eks-spark-benchmark:emr6.10_jdk8",
           "spark.kubernetes.driver.podTemplateFile": "s3://'$S3BUCKET'/app_code/pod-template/driver-pod-template.yaml",
           "spark.kubernetes.executor.podTemplateFile": "s3://'$S3BUCKET'/app_code/pod-template/executor-pod-template.yaml",
-          "spark.kubernetes.driver.limit.cores": "4.1",
-          "spark.kubernetes.executor.limit.cores": "4.3",
-          "spark.driver.memoryOverhead": "1000",
+
           "spark.executor.memoryOverhead": "2G",
           "spark.network.timeout": "2000s",
           "spark.executor.heartbeatInterval": "300s",
-          "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "c59d"
+          "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "mn-od"
       }},
       {
         "classification": "spark-log4j",
