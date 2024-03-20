@@ -37,9 +37,10 @@ COPY --from=builder /hadoop /opt/hadoop
 
 RUN set -ex && \
     sed -i 's/http:\/\/deb.\(.*\)/https:\/\/deb.\1/g' /etc/apt/sources.list && \
-    apt-get update && \
+    apt-get update -y && \
+    apt-get upgrade -y && \
     ln -s /lib /lib64 && \
-    apt install -y bash tini libc6 libpam-modules krb5-user libnss3 procps screen \
+    apt-get install -y bash tini libc6 libpam-modules krb5-user libnss3 procps tar curl && \
     touch /opt/spark/RELEASE && \
     rm /bin/sh && \
     ln -sv /bin/bash /bin/sh && \
