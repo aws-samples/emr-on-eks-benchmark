@@ -20,7 +20,7 @@ spec:
         path: /local4        
   initContainers:  
   - name: volume-permission
-    image: public.ecr.aws/y4g4v0z7/busybox
+    image: public.ecr.aws/docker/library/busybox
     # grant volume access to hadoop user  
     command: ['sh', '-c', 'mkdir -p /data{1,2,3,4}; chown -R 999:1000 /data*'] 
     volumeMounts:

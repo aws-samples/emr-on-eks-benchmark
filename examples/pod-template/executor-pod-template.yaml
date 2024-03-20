@@ -11,7 +11,7 @@ spec:
         path: /local1  
   initContainers:  
   - name: volume-permission
-    image: public.ecr.aws/y4g4v0z7/busybox
+    image: public.ecr.aws/docker/library/busybox
     command: ['sh', '-c', 'mkdir /data1; chown -R 999:1000 /data1'] # grant volume access to hadoop user  
     volumeMounts:
       - name: spark-local-dir-1

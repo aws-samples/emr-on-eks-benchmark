@@ -53,7 +53,7 @@ spec:
   driver:
     initContainers:  
     - name: volume-permission
-      image: public.ecr.aws/y4g4v0z7/busybox
+      image: public.ecr.aws/docker/library/busybox
       command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
       volumeMounts:
         - name: spark-local-dir-1
@@ -75,7 +75,7 @@ spec:
   executor:
     initContainers:  
     - name: volume-permission
-      image: public.ecr.aws/y4g4v0z7/busybox
+      image: public.ecr.aws/docker/library/busybox
       command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
       volumeMounts:
         - name: spark-local-dir-1
