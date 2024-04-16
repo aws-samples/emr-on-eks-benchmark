@@ -42,15 +42,13 @@ object BenchmarkSQL {
       useDoubleForDecimal = false,
       useStringForDate = false)
 
+    Try {
+      spark.sql(s"create database $databaseName")
+    }
+    tables.createExternalTables(tpcdsDataDir, format, databaseName, overwrite = true, discoverPartitions = true)
     if (optimizeQueries) {
-      Try {
-        spark.sql(s"create database $databaseName")
-      }
-      tables.createExternalTables(tpcdsDataDir, format, databaseName, overwrite = true, discoverPartitions = true)
       tables.analyzeTables(databaseName, analyzeColumns = true)
       spark.conf.set("spark.sql.cbo.enabled", "true")
-    } else {
-      tables.createTemporaryTables(tpcdsDataDir, format)
     }
 
     val tpcds = new TPCDS(spark.sqlContext)
@@ -62,8 +60,8 @@ object BenchmarkSQL {
     }
 
     val filtered_queries = query_filter match {
-      case Seq() => tpcds.tpcds2_4Queries
-      case _ => tpcds.tpcds2_4Queries.filter(q => query_filter.contains(q.name))
+      case Seq() => tpcds.tpcds2_13Queries
+      case _ => tpcds.tpcds2_13Queries.filter(q => query_filter.contains(q.name))
     }
 
     // Start experiment

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.util.{escapeSingleQuotedString, quoteIdentifier}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
@@ -254,13 +255,43 @@ abstract class Tables(sqlContext: SQLContext, scaleFactor: String,
       if (!tableExists || overwrite) {
         println(s"Creating external table $name in database $databaseName using data stored in $location.")
         log.info(s"Creating external table $name in database $databaseName using data stored in $location.")
-        sqlContext.createExternalTable(qualifiedTableName, location, format)
+        createTableWithoutSchemaInference(format, databaseName, location)
       }
       if (partitionColumns.nonEmpty && discoverPartitions) {
         println(s"Discovering partitions for table $name.")
         log.info(s"Discovering partitions for table $name.")
         sqlContext.sql(s"ALTER TABLE $databaseName.$name RECOVER PARTITIONS")
       }
+    }
+
+    private def createTableWithoutSchemaInference(
+      format: String,
+      databaseName: String,
+      location: String): Unit = {
+      // Currently Catalog.createTable doesn't support creating partitioned tables when specifying
+      // a schema. We workaround this by using the SQL api instead.
+      val builder = new StringBuilder
+      builder ++= "CREATE EXTERNAL TABLE "
+      builder ++= quoteIdentifier(databaseName) + "." + quoteIdentifier(name) + " "
+
+      val (partFields, dataFields) = {
+        val partitionColsSet = partitionColumns.toSet
+        schema.fields.partition(field => partitionColsSet.contains(field.name))
+      }
+
+      builder ++= dataFields.map(_.toDDL).mkString("(", ", ", ") ")
+
+      builder ++= s"USING $format "
+
+      if (partFields.nonEmpty) {
+        builder ++= "PARTITIONED BY "
+        builder ++= partFields.map(_.toDDL).mkString("(", ", ", ") ")
+      }
+
+      builder ++= s"LOCATION '${escapeSingleQuotedString(location)}' "
+
+      val command = builder.toString
+      sqlContext.sql(command)
     }
 
     def createTemporaryTable(location: String, format: String): Unit = {

@@ -46,8 +46,8 @@ import com.databricks.spark.sql.perf.tpcds.TPCDS
 val tpcds = new TPCDS (sqlContext = sqlContext)
 def queries = {
   val filtered_queries = query_filter match {
-    case Seq() => tpcds.tpcds2_4Queries
-    case _ => tpcds.tpcds2_4Queries.filter(q => query_filter.contains(q.name))
+    case Seq() => tpcds.tpcds2_13Queries
+    case _ => tpcds.tpcds2_13Queries.filter(q => query_filter.contains(q.name))
   }
   if (randomizeQueries) scala.util.Random.shuffle(filtered_queries) else filtered_queries
 }
