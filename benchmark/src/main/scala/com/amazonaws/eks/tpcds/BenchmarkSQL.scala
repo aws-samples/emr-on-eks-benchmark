@@ -11,20 +11,15 @@ import scala.util.Try
 
 object BenchmarkSQL {
   def main(args: Array[String]) {
-    val tpcdsDataDir = args(0)
-    val resultLocation = args(1)
-    val dsdgenDir = args(2)
-    val format = Try(args(3).toString).getOrElse("parquet")
-    val scaleFactor = Try(args(4).toString).getOrElse("1")
-    val iterations = args(5).toInt
-    val optimizeQueries = Try(args(6).toBoolean).getOrElse(false)
-    val filterQueries = Try(args(7).toString).getOrElse("")
-    val onlyWarn = Try(args(8).toBoolean).getOrElse(false)
+    val resultLocation = args(0)
+    val scaleFactor = Try(args(1).toString).getOrElse("1")
+    val iterations = args(2).toInt
+    val optimizeQueries = Try(args(3).toBoolean).getOrElse(false)
+    val filterQueries = Try(args(4).toString).getOrElse("")
+    val onlyWarn = Try(args(5).toBoolean).getOrElse(false)
+    val databaseName = Try(args(6).toString).getOrElse("tpcds_db")
 
-    val databaseName = "tpcds_db"
     val timeout = 24*60*60
-
-    println(s"DATA DIR is $tpcdsDataDir")
 
     val spark = SparkSession
       .builder
@@ -36,20 +31,7 @@ object BenchmarkSQL {
       LogManager.getLogger("org").setLevel(Level.WARN)
     }
 
-    val tables = new TPCDSTables(spark.sqlContext,
-      dsdgenDir = dsdgenDir,
-      scaleFactor = scaleFactor,
-      useDoubleForDecimal = false,
-      useStringForDate = false)
-
-    Try {
-      spark.sql(s"create database $databaseName")
-    }
-    tables.createExternalTables(tpcdsDataDir, format, databaseName, overwrite = true, discoverPartitions = true)
-    if (optimizeQueries) {
-      tables.analyzeTables(databaseName, analyzeColumns = true)
-      spark.conf.set("spark.sql.cbo.enabled", "true")
-    }
+    spark.sqlContext.sql(s"USE $databaseName")
 
     val tpcds = new TPCDS(spark.sqlContext)
 
