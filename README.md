@@ -1,7 +1,8 @@
 ## Spark on Kubernetes benchmark utility
 
-This repository provides a general tool to benchmark Spark performance.
+This repository provides a general tool to benchmark Spark & Iceberg performance.
 If you want to use the [prebuild docker image](https://github.com/aws-samples/emr-on-eks-benchmark/pkgs/container/emr-on-eks-benchmark) based on a prebuild OSS spark_3.1.2_hadoop_3.3.1, you can skip the [build section](#Build-benchmark-utility-docker-image) and jump to [Run Benchmark](#Run-Benchmark) directly. If you want to build your own, follow the steps in the [build section](#Build-benchmark-utility-docker-image).
+For running the benchmark with Spark on Iceberg tables, see [EMR on EC2](#benchmark-for-emr-on-ec2-with-spark--iceberg)
 
 ## Prerequisite
 
@@ -112,7 +113,7 @@ export EMRCLUSTER_NAME=emr-on-eks-nvme
 export AWS_REGION=us-east-1
 bash examples/emr6.5-benchmark.sh
 ```
-### Benchmark for EMR on EC2
+### Benchmark for EMR on EC2 with Spark & Iceberg
 Few notes for the set up:
 1. Use the same instance type c5d.9xlarge as in the EKS cluster.
 2. If choosing an EBS-backed instance, check the [default instance storage setting](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-storage.html) by EMR on EC2, and attach the same number of EBS volumes to your EKS cluster before running EKS related benchmarks.
@@ -138,15 +139,51 @@ S3BUCKET=<S3_BUCKET_HAS_TPCDS_DATASET>
 aws s3 cp eks-spark-benchmark-assembly-1.0.jar s3://$S3BUCKET
 ```
 
+Create Iceberg Tables with Hadoop Catalog
+```bash
+# Step type: Spark Application
+# JAR location: s3://$S3BUCKET/eks-spark-benchmark-assembly-1.0.jar
+# Example
+aws emr add-steps --cluster-id <cluster-id> --steps Type=Spark,Name="Create Iceberg Tables",
+Args=[--class,com.amazonaws.eks.tpcds.CreateIcebergTables,--conf,spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,
+--conf,spark.sql.catalog.hadoop_catalog=org.apache.iceberg.spark.SparkCatalog,
+--conf,spark.sql.catalog.hadoop_catalog.type=hadoop,
+--conf,spark.sql.catalog.hadoop_catalog.warehouse=s3://<bucket>/<warehouse_path>/,
+--conf,spark.sql.catalog.hadoop_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO,
+s3://<bucket>/<jar_location>/eks-spark-benchmark-assembly-1.0.jar,s3://blogpost-sparkoneks-us-east-1/blog/BLOG_TPCDS-TEST-3T-partitioned/,
+/home/hadoop/tpcds-kit/tools,parquet,3000,true,<database_name>],ActionOnFailure=CONTINUE --region <AWS region>
+```
+
 Submit the benchmark job via EMR Step on the AWS console. Make sure the EMR on EC2 cluster can access the `$S3BUCKET`:
 ```bash
 # Step type: Spark Application
 # JAR location: s3://$S3BUCKET/eks-spark-benchmark-assembly-1.0.jar
-# Spark-submit options:
---class com.amazonaws.eks.tpcds.BenchmarkSQL --conf spark.driver.cores=4 --conf spark.driver.memory=5g --conf spark.executor.cores=4 --conf spark.executor.memory=6g --conf spark.executor.instances=47 --conf spark.network.timeout=2000 --conf spark.executor.heartbeatInterval="300s" --conf spark.executor.memoryOverhead=2G --conf spark.driver.memoryOverhead=1000 --conf spark.dynamicAllocation.enabled=false --conf spark.shuffle.service.enabled=false
-# Arguments:
-s3://blogpost-sparkoneks-us-east-1/blog/BLOG_TPCDS-TEST-3T-partitioned s3://$S3BUCKET/EMRONEC2_TPCDS-TEST-3T-RESULT /opt/tpcds-kit/tools parquet 3000 1 false q1-v2.4,q10-v2.4,q11-v2.4,q12-v2.4,q13-v2.4,q14a-v2.4,q14b-v2.4,q15-v2.4,q16-v2.4,q17-v2.4,q18-v2.4,q19-v2.4,q2-v2.4,q20-v2.4,q21-v2.4,q22-v2.4,q23a-v2.4,q23b-v2.4,q24a-v2.4,q24b-v2.4,q25-v2.4,q26-v2.4,q27-v2.4,q28-v2.4,q29-v2.4,q3-v2.4,q30-v2.4,q31-v2.4,q32-v2.4,q33-v2.4,q34-v2.4,q35-v2.4,q36-v2.4,q37-v2.4,q38-v2.4,q39a-v2.4,q39b-v2.4,q4-v2.4,q40-v2.4,q41-v2.4,q42-v2.4,q43-v2.4,q44-v2.4,q45-v2.4,q46-v2.4,q47-v2.4,q48-v2.4,q49-v2.4,q5-v2.4,q50-v2.4,q51-v2.4,q52-v2.4,q53-v2.4,q54-v2.4,q55-v2.4,q56-v2.4,q57-v2.4,q58-v2.4,q59-v2.4,q6-v2.4,q60-v2.4,q61-v2.4,q62-v2.4,q63-v2.4,q64-v2.4,q65-v2.4,q66-v2.4,q67-v2.4,q68-v2.4,q69-v2.4,q7-v2.4,q70-v2.4,q71-v2.4,q72-v2.4,q73-v2.4,q74-v2.4,q75-v2.4,q76-v2.4,q77-v2.4,q78-v2.4,q79-v2.4,q8-v2.4,q80-v2.4,q81-v2.4,q82-v2.4,q83-v2.4,q84-v2.4,q85-v2.4,q86-v2.4,q87-v2.4,q88-v2.4,q89-v2.4,q9-v2.4,q90-v2.4,q91-v2.4,q92-v2.4,q93-v2.4,q94-v2.4,q95-v2.4,q96-v2.4,q97-v2.4,q98-v2.4,q99-v2.4,ss_max-v2.4 true
+# Example:
+aws emr add-steps   --cluster-id <cluster-id>
+--steps Type=Spark,Name="SPARK Iceberg EMR TPCDS Benchmark Job",
+Args=[--class,com.amazonaws.eks.tpcds.BenchmarkSQL,
+--conf,spark.driver.cores=4,
+--conf,spark.driver.memory=10g,
+--conf,spark.executor.cores=16,
+--conf,spark.executor.memory=100g,
+--conf,spark.executor.instances=8,
+--conf,spark.network.timeout=2000,
+--conf,spark.executor.heartbeatInterval=300s,
+--conf,spark.dynamicAllocation.enabled=false,
+--conf,spark.shuffle.service.enabled=false,
+--conf,spark.sql.iceberg.data-prefetch.enabled=true,
+--conf,spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,
+--conf,spark.sql.catalog.local=org.apache.iceberg.spark.SparkCatalog,
+--conf,spark.sql.catalog.local.type=hadoop,
+--conf,spark.sql.catalog.local.warehouse=s3://<your-bucket>/<warehouse-path>,
+--conf,spark.sql.defaultCatalog=local,
+--conf,spark.sql.catalog.local.io-impl=org.apache.iceberg.aws.s3.S3FileIO,
+s3://<your-bucket>/<jar-location>/eks-spark-benchmark-assembly-1.0.jar,
+s3://<your-bucket>/<results-location>,3000,1,false,
+'q1-v2.13\,q10-v2.13\,q11-v2.13\,q12-v2.13\,q13-v2.13\,q14a-v2.13\,q14b-v2.13\,q15-v2.13\,q16-v2.13\,q17-v2.13\,q18-v2.13\,q19-v2.13\,q2-v2.13\,q20-v2.13\,q21-v2.13\,q22-v2.13\,q23a-v2.13\,q23b-v2.13\,q24a-v2.13\,q24b-v2.13\,q25-v2.13\,q26-v2.13\,q27-v2.13\,q28-v2.13\,q29-v2.13\,q3-v2.13\,q30-v2.13\,q31-v2.13\,q32-v2.13\,q33-v2.13\,q34-v2.13\,q35-v2.13\,q36-v2.13\,q37-v2.13\,q38-v2.13\,q39a-v2.13\,q39b-v2.13\,q4-v2.13\,q40-v2.13\,q41-v2.13\,q42-v2.13\,q43-v2.13\,q44-v2.13\,q45-v2.13\,q46-v2.13\,q47-v2.13\,q48-v2.13\,q49-v2.13\,q5-v2.13\,q50-v2.13\,q51-v2.13\,q52-v2.13\,q53-v2.13\,q54-v2.13\,q55-v2.13\,q56-v2.13\,q57-v2.13\,q58-v2.13\,q59-v2.13\,q6-v2.13\,q60-v2.13\,q61-v2.13\,q62-v2.13\,q63-v2.13\,q64-v2.13\,q65-v2.13\,q66-v2.13\,q67-v2.13\,q68-v2.13\,q69-v2.13\,q7-v2.13\,q70-v2.13\,q71-v2.13\,q72-v2.13\,q73-v2.13\,q74-v2.13\,q75-v2.13\,q76-v2.13\,q77-v2.13\,q78-v2.13\,q79-v2.13\,q8-v2.13\,q80-v2.13\,q81-v2.13\,q82-v2.13\,q83-v2.13\,q84-v2.13\,q85-v2.13\,q86-v2.13\,q87-v2.13\,q88-v2.13\,q89-v2.13\,q9-v2.13\,q90-v2.13\,q91-v2.13\,q92-v2.13\,q93-v2.13\,q94-v2.13\,q95-v2.13\,q96-v2.13\,q97-v2.13\,q98-v2.13\,q99-v2.13\,ss_max-v2.13',
+true,<database-name>],ActionOnFailure=CONTINUE --region <aws-region>
 
+# Make sure to select the same database name and warehouse path from Iceberg tables creation step.
 ```
 
 > Note: We use 3TB dataset in the [examples](./examples), if you'd like to change to 100G or 1T, don't forget to change the parameter `Scale factor (in GB)` in the job submission scripts. Spark executor configuration should also be adjusted correspondingly.
