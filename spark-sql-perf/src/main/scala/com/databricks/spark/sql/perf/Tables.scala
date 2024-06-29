@@ -96,7 +96,8 @@ trait DataGenerator extends Serializable {
 
 
 abstract class Tables(sqlContext: SQLContext, scaleFactor: String,
-    useDoubleForDecimal: Boolean = false, useStringForDate: Boolean = false)
+    useDoubleForDecimal: Boolean = false, useStringForDate: Boolean = false,
+                      useStringForCharAndVarchar: Boolean = false)
     extends Serializable {
 
   def dataGenerator: DataGenerator
@@ -161,6 +162,7 @@ abstract class Tables(sqlContext: SQLContext, scaleFactor: String,
         val newDataType = field.dataType match {
           case decimal: DecimalType if useDoubleForDecimal => DoubleType
           case date: DateType if useStringForDate => StringType
+          case _: CharType | _: VarcharType if useStringForCharAndVarchar => StringType
           case other => other
         }
         field.copy(dataType = newDataType)
@@ -245,7 +247,7 @@ abstract class Tables(sqlContext: SQLContext, scaleFactor: String,
     }
 
     def createExternalTable(location: String, format: String, databaseName: String,
-      overwrite: Boolean, discoverPartitions: Boolean = true): Unit = {
+      overwrite: Boolean, discoverPartitions: Boolean = true, inferSchema: Boolean): Unit = {
 
       val qualifiedTableName = databaseName + "." + name
       val tableExists = sqlContext.tableNames(databaseName).contains(name)
@@ -255,7 +257,12 @@ abstract class Tables(sqlContext: SQLContext, scaleFactor: String,
       if (!tableExists || overwrite) {
         println(s"Creating external table $name in database $databaseName using data stored in $location.")
         log.info(s"Creating external table $name in database $databaseName using data stored in $location.")
-        createTableWithoutSchemaInference(format, databaseName, location)
+        if (inferSchema) {
+          val catalog = sqlContext.sparkSession.catalog
+          catalog.createTable(qualifiedTableName, format, Map("path" -> location))
+        } else {
+          createTableWithoutSchemaInference(format, databaseName, location)
+        }
       }
       if (partitionColumns.nonEmpty && discoverPartitions) {
         println(s"Discovering partitions for table $name.")
@@ -343,7 +350,8 @@ abstract class Tables(sqlContext: SQLContext, scaleFactor: String,
   }
 
   def createExternalTables(location: String, format: String, databaseName: String,
-      overwrite: Boolean, discoverPartitions: Boolean, tableFilter: String = ""): Unit = {
+      overwrite: Boolean, discoverPartitions: Boolean, tableFilter: String = "",
+                           inferSchema: Boolean = false): Unit = {
 
     val filtered = if (tableFilter.isEmpty) {
       tables
@@ -354,7 +362,7 @@ abstract class Tables(sqlContext: SQLContext, scaleFactor: String,
     sqlContext.sql(s"CREATE DATABASE IF NOT EXISTS $databaseName")
     filtered.foreach { table =>
       val tableLocation = s"$location/${table.name}"
-      table.createExternalTable(tableLocation, format, databaseName, overwrite, discoverPartitions)
+      table.createExternalTable(tableLocation, format, databaseName, overwrite, discoverPartitions, inferSchema)
     }
     sqlContext.sql(s"USE $databaseName")
     println(s"The current database has been set to $databaseName.")

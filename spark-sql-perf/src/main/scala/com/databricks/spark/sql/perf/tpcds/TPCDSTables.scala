@@ -61,8 +61,10 @@ class TPCDSTables(
   dsdgenDir: String,
   scaleFactor: String,
   useDoubleForDecimal: Boolean = false,
-  useStringForDate: Boolean = false)
-  extends Tables(sqlContext, scaleFactor, useDoubleForDecimal, useStringForDate) {
+  useStringForDate: Boolean = false,
+  useStringForCharAndVarchar: Boolean = false)
+  extends Tables(sqlContext, scaleFactor, useDoubleForDecimal, useStringForDate,
+    useStringForCharAndVarchar) {
   import sqlContext.implicits._
 
   val dataGenerator = new DSDGEN(dsdgenDir)
