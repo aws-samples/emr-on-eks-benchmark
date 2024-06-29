@@ -19,7 +19,7 @@ RUN tar -xvzf hadoop-${HADOOP_VERSION}.tar.gz && \
     rm -rf hadoop/share/doc
 
 FROM python:3.7.16-slim AS py3
-FROM openjdk:8-jdk-slim as final
+FROM openjdk:8-jdk-slim AS final
 WORKDIR /opt/spark
 
 # Copy Spark from builder stage
@@ -42,18 +42,18 @@ RUN set -ex && \
 COPY --from=py3 / /
 RUN python3 -m pip install --upgrade pip
 # Configure environment variables for spark
-ENV SPARK_HOME /opt/spark
-ENV HADOOP_HOME /opt/hadoop
+ENV SPARK_HOME=/opt/spark
+ENV HADOOP_HOME=/opt/hadoop
 ENV SPARK_DIST_CLASSPATH="$HADOOP_HOME/etc/hadoop:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*:/contrib/capacity-scheduler/*.jar:$HADOOP_HOME/share/hadoop/tools/lib/*"
 ENV SPARK_EXTRA_CLASSPATH="$SPARK_DIST_CLASSPATH"
-ENV LD_LIBRARY_PATH /lib64
+ENV LD_LIBRARY_PATH=/lib64
 
 # Create a Hadoop user/group
 RUN addgroup -gid 1000 hadoop && \
 useradd -u 1000 -g hadoop -m -s /bin/sh hadoop && \
 echo "hadoop:hadoop" | chpasswd
 USER hadoop:hadoop
-ENV SPARK_USER hadoop
+ENV SPARK_USER=hadoop
 
 # Set spark workdir
 WORKDIR /opt/spark/work-dir

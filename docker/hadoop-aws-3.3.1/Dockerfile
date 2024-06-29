@@ -27,7 +27,7 @@ WORKDIR /hadoop/share/hadoop/tools/lib
 # # Add additional jar for Hadoop S3a committer
 # ADD https://repository.cloudera.com/artifactory/cloudera-repos/org/apache/spark/spark-hadoop-cloud_2.12/3.1.1.3.1.7270.0-253/spark-hadoop-cloud_2.12-3.1.1.3.1.7270.0-253.jar .
 
-FROM openjdk:8-jdk-slim as final
+FROM openjdk:8-jdk-slim AS final
 WORKDIR /opt/spark
 
 # Copy Spark from builder stage
@@ -50,18 +50,18 @@ RUN set -ex && \
     rm -rf /var/cache/apt/*
 
 # Configure environment variables for spark
-ENV SPARK_HOME /opt/spark
-ENV HADOOP_HOME /opt/hadoop
+ENV SPARK_HOME=/opt/spark
+ENV HADOOP_HOME=/opt/hadoop
 ENV SPARK_DIST_CLASSPATH="$HADOOP_HOME/etc/hadoop:$HADOOP_HOME/share/hadoop/common/lib/*:$HADOOP_HOME/share/hadoop/common/*:$HADOOP_HOME/share/hadoop/hdfs:$HADOOP_HOME/share/hadoop/hdfs/lib/*:$HADOOP_HOME/share/hadoop/hdfs/*:$HADOOP_HOME/share/hadoop/yarn:$HADOOP_HOME/share/hadoop/yarn/lib/*:$HADOOP_HOME/share/hadoop/yarn/*:$HADOOP_HOME/share/hadoop/mapreduce/lib/*:$HADOOP_HOME/share/hadoop/mapreduce/*:/contrib/capacity-scheduler/*.jar:$HADOOP_HOME/share/hadoop/tools/lib/*"
 ENV SPARK_EXTRA_CLASSPATH="$SPARK_DIST_CLASSPATH"
-ENV LD_LIBRARY_PATH /lib64
+ENV LD_LIBRARY_PATH=/lib64
 
 # Create a Hadoop user/group
 RUN addgroup -gid 1000 hadoop && \
 useradd -u 1000 -g hadoop -m -s /bin/sh hadoop && \
 echo "hadoop:hadoop" | chpasswd
 USER hadoop:hadoop
-ENV SPARK_USER hadoop
+ENV SPARK_USER=hadoop
 
 # Set spark workdir
 WORKDIR /opt/spark/work-dir
