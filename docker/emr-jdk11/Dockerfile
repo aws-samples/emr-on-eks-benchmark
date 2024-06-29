@@ -1,6 +1,6 @@
 FROM 021732063925.dkr.ecr.us-west-2.amazonaws.com/eks-spark-benchmark:emr6.10_jdk8
 USER root
-ENV JAVA_HOME /etc/alternatives/jre
+ENV JAVA_HOME=/etc/alternatives/jre
 
 RUN rpm -qa | grep corretto | xargs  yum -y remove \
 # to keep hadoop-lzo dependency
