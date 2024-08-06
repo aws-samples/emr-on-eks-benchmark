@@ -17,6 +17,8 @@ object CreateIcebergTables {
     val scaleFactor = Try(args(3).toString).getOrElse("1")
     val onlyWarn = Try(args(4).toBoolean).getOrElse(false)
     val databaseName = Try(args(5).toString).getOrElse("tpcds_db_iceberg")
+    val useStringForCharAndVarchar = Try(args(6).toBoolean).getOrElse(false)
+    val inferSchema = Try(args(7).toBoolean).getOrElse(false)
 
     println(s"DATA DIR is $tpcdsDataDir")
     val tempDatabaseName = databaseName + "_temp"
@@ -35,12 +37,14 @@ object CreateIcebergTables {
       dsdgenDir = dsdgenDir,
       scaleFactor = scaleFactor,
       useDoubleForDecimal = false,
-      useStringForDate = false)
+      useStringForDate = false,
+      useStringForCharAndVarchar = useStringForCharAndVarchar)
 
     Try {
       spark.sql(s"create database $tempDatabaseName")
     }
-    tables.createExternalTables(tpcdsDataDir, format, tempDatabaseName, overwrite = true, discoverPartitions = true)
+    tables.createExternalTables(tpcdsDataDir, format, tempDatabaseName,
+      overwrite = true, discoverPartitions = true, inferSchema = inferSchema)
 
     spark.sql(s"use $tempDatabaseName")
     spark.sql(s"show tables").show(200, false)
