@@ -17,13 +17,7 @@ RUN yum update -y && \
 FROM mozilla/sbt:8u292_1.5.4 AS sbtenv
 
 # Build the Databricks SQL perf library from the local Spark version
-RUN git clone -b delta https://github.com/aws-samples/emr-on-eks-benchmark.git /tmp/emr-on-eks-benchmark && \
-    rm -rf /tmp/emr-on-eks-benchmark/spark-sql-perf && \
-    rm -rf /tmp/emr-on-eks-benchmark/benchmark && \
-    rm -rf /tmp/emr-on-eks-benchmark/delta-perf
-ADD spark-sql-perf /tmp/emr-on-eks-benchmark/spark-sql-perf
-ADD benchmark /tmp/emr-on-eks-benchmark/benchmark
-ADD delta-perf /tmp/emr-on-eks-benchmark/delta-perf
+RUN git clone -b tpcds-v2.13_iceberg https://github.com/aws-samples/emr-on-eks-benchmark.git /tmp/emr-on-eks-benchmark
 RUN cd /tmp/emr-on-eks-benchmark/spark-sql-perf/ && sbt +package
 
 # Use the compiled Databricks SQL perf library to build benchmark utility
