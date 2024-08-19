@@ -4,7 +4,7 @@ ARG SPARK_BASE_IMAGE=public.ecr.aws/w5m3x7g4/spark:3.1.2_hadoop_3.3.1
 
 FROM amazonlinux:2 AS tpc-toolkit
 
-ENV TPCDS_KIT_VERSION "master"
+ENV TPCDS_KIT_VERSION="master"
 
 RUN yum update -y && \
     yum group install -y "Development Tools" && \
