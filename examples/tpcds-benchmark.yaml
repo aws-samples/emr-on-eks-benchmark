@@ -47,13 +47,10 @@ spec:
     "spark.hadoop.fs.s3.impl": "org.apache.hadoop.fs.s3a.S3AFileSystem"
     "spark.hadoop.mapreduce.fileoutputcommitter.algorithm.version": "2" 
     "spark.executor.defaultJavaOptions": "-verbose:gc -XX:+UseParallelGC -XX:InitiatingHeapOccupancyPercent=70"
-    # Keep pods in a single AZ 
-    # "spark.kubernetes.node.selector.topology.kubernetes.io/zone": "us-east-1b"
-    # "spark.kubernetes.node.selector.eks.amazonaws.com/capacityType": "ON_DEMAND"
   driver:
     initContainers:  
     - name: volume-permission
-      image: public.ecr.aws/docker/library/busybox
+      image: busybox
       command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
       volumeMounts:
         - name: spark-local-dir-1
@@ -75,7 +72,7 @@ spec:
   executor:
     initContainers:  
     - name: volume-permission
-      image: public.ecr.aws/docker/library/busybox
+      image: busybox
       command: ['sh', '-c', 'mkdir /ossdata1; chown -R 1000:1000 /ossdata1']
       volumeMounts:
         - name: spark-local-dir-1

@@ -3,8 +3,8 @@
 apiVersion: v1
 kind: Pod
 spec:
-  nodeSelector:
-    app: sparktest
+  # nodeSelector:
+  #   app: sparktest
   volumes:
     - name: spark-local-dir-1
       hostPath:
@@ -12,7 +12,7 @@ spec:
   initContainers:  
   - name: volume-permission
     image: public.ecr.aws/docker/library/busybox
-    command: ['sh', '-c', 'mkdir /data1; chown -R 999:1000 /data1'] # grant volume access to hadoop user  
+    command: ['sh', '-c', 'mkdir -p /data1; chown -R 999:1000 /data1'] # grant volume access to hadoop user  
     volumeMounts:
       - name: spark-local-dir-1
         mountPath: /data1
