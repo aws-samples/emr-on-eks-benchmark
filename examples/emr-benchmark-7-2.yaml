@@ -8,7 +8,7 @@ metadata:
 spec:
   type: Scala
   mode: cluster
-  image: public.ecr.aws/myang-poc/eks-spark-benchmark:emr7.2.0-java8
+  image: public.ecr.aws/myang-poc/eks-spark-benchmark:emr7.2.0
   imagePullPolicy: IfNotPresent
   sparkVersion: 3.5.1
   mainClass: com.amazonaws.eks.tpcds.BenchmarkSQL
@@ -29,7 +29,7 @@ spec:
   # Optimize queries with hive tables
     - "false"
   # Filter queries, will run all if empty - "q98-v2.4,q99-v2.4,ss_max-v2.4,q95-v2.4"
-    - "" 
+    - "q1-v2.13,q10-v2.13,q11-v2.13,q12-v2.13,q13-v2.13,q14a-v2.13,q14b-v2.13,q15-v2.13,q16-v2.13,q17-v2.13,q18-v2.13,q19-v2.13,q2-v2.13,q20-v2.13,q21-v2.13,q22-v2.13,q23a-v2.13,q23b-v2.13,q24a-v2.13,q24b-v2.13,q25-v2.13,q26-v2.13,q27-v2.13,q28-v2.13,q29-v2.13,q3-v2.13,q30-v2.13,q31-v2.13,q32-v2.13,q33-v2.13,q34-v2.13,q35-v2.13,q36-v2.13,q37-v2.13,q38-v2.13,q39a-v2.13,q39b-v2.13,q4-v2.13,q40-v2.13,q41-v2.13,q42-v2.13,q43-v2.13,q44-v2.13,q45-v2.13,q46-v2.13,q47-v2.13,q48-v2.13,q49-v2.13,q5-v2.13,q50-v2.13,q51-v2.13,q52-v2.13,q53-v2.13,q54-v2.13,q55-v2.13,q56-v2.13,q57-v2.13,q58-v2.13,q59-v2.13,q6-v2.13,q60-v2.13,q61-v2.13,q62-v2.13,q63-v2.13,q64-v2.13,q65-v2.13,q66-v2.13,q67-v2.13,q68-v2.13,q69-v2.13,q7-v2.13,q70-v2.13,q71-v2.13,q72-v2.13,q73-v2.13,q74-v2.13,q75-v2.13,q76-v2.13,q77-v2.13,q78-v2.13,q79-v2.13,q8-v2.13,q80-v2.13,q81-v2.13,q82-v2.13,q83-v2.13,q84-v2.13,q85-v2.13,q86-v2.13,q87-v2.13,q88-v2.13,q89-v2.13,q9-v2.13,q90-v2.13,q91-v2.13,q92-v2.13,q93-v2.13,q94-v2.13,q95-v2.13,q96-v2.13,q97-v2.13,q98-v2.13,q99-v2.13,ss_max-v2.13" 
   # Logging set to WARN
     - "true"
   hadoopConf:
@@ -51,6 +51,10 @@ spec:
     spark.executor.heartbeatInterval: 300s
     spark.kubernetes.executor.podNamePrefix: emr-operator
     spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup: c5d9b
+    # assume cross-account IAM Role
+    # spark.hadoop.fs.s3.bucket.S3_BUCKET_NAME.customAWSCredentialsProvider: "com.amazonaws.emr.AssumeRoleAWSCredentialsProvider"
+    # spark.kubernetes.driverEnv.ASSUME_ROLE_CREDENTIALS_ROLE_ARN: "arn:aws:iam::ACCOUNTID:role/s3-access-role-client-a"
+    # spark.executorEnv.ASSUME_ROLE_CREDENTIALS_ROLE_ARN: "arn:aws:iam::ACCOUNTID:role/s3-access-role-client-a"
   driver:
     volumeMounts:
       - name: spark-local-dir-1

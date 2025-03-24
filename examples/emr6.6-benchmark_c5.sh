@@ -35,7 +35,14 @@ aws emr-containers start-job-run \
 
           "spark.kubernetes.executor.podNamePrefix": "emr-eks-tpcds-c5",
           "spark.kubernetes.node.selector.eks.amazonaws.com/nodegroup": "C5_4"
-         }}
+         }},
+        {
+        "classification": "emr-containers-defaults",
+        "properties": {
+          "logging.request.memory": "200Mi",
+          "logging.request.cores": "0.4"
+        }
+      }
     ], 
     "monitoringConfiguration": {
       "s3MonitoringConfiguration": {"logUri": "s3://'$S3BUCKET'/elasticmapreduce/emr-containers"}}}'
