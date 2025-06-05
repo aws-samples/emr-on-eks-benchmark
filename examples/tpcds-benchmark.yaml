@@ -54,7 +54,7 @@ spec:
     initContainers:  
     - name: volume-permission
       image: busybox
-      command: ['sh', '-c', 'm -rf /ossdata1; chown -R 1000:1000 /ossdata1']
+      command: ['sh', '-c', 'rm -rf /ossdata1; chown -R 1000:1000 /ossdata1']
       volumeMounts:
         - name: spark-local-dir-1
           mountPath: /ossdata1
