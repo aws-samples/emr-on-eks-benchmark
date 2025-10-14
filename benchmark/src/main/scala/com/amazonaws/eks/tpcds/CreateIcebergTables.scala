@@ -2,21 +2,20 @@
 // SPDX-License-Identifier: MIT-0
 package com.amazonaws.eks.tpcds
 
-import com.databricks.spark.sql.perf.tpcds.{TPCDS, TPCDSTables}
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.functions.col
+import com.databricks.spark.sql.perf.tpcds.TPCDSTables
 import org.apache.log4j.{Level, LogManager}
+import org.apache.spark.sql.SparkSession
+
 import scala.util.Try
 
 object CreateIcebergTables {
   def main(args: Array[String]) {
     val tpcdsDataDir = args(0)
     val dsdgenDir = args(1)
-    val format = Try(args(2).toString).getOrElse("parquet")
-    val scaleFactor = Try(args(3).toString).getOrElse("1")
+    val format = Try(args(2)).getOrElse("parquet")
+    val scaleFactor = Try(args(3)).getOrElse("1")
     val onlyWarn = Try(args(4).toBoolean).getOrElse(false)
-    val databaseName = Try(args(5).toString).getOrElse("tpcds_db_iceberg")
+    val databaseName = Try(args(5)).getOrElse("tpcds_db_iceberg")
     val useStringForCharAndVarchar = Try(args(6).toBoolean).getOrElse(false)
     val inferSchema = Try(args(7).toBoolean).getOrElse(false)
 
@@ -25,7 +24,7 @@ object CreateIcebergTables {
 
     val spark = SparkSession
       .builder
-      .appName(s"TPCDS SQL Benchmark $scaleFactor GB")
+      .appName(s"TPCDS SQL Benchmark create tables for read benchmark with scale $scaleFactor GB")
       .getOrCreate()
 
     if (onlyWarn) {

@@ -18,12 +18,13 @@ object BenchmarkSQL {
     val filterQueries = Try(args(4).toString).getOrElse("")
     val onlyWarn = Try(args(5).toBoolean).getOrElse(false)
     val databaseName = Try(args(6).toString).getOrElse("tpcds_db")
+    val benchmarkType = Try(args(7).toString).getOrElse("read")
 
     val timeout = 24*60*60
 
     val spark = SparkSession
       .builder
-      .appName(s"TPCDS SQL Benchmark $scaleFactor GB")
+      .appName(s"TPCDS SQL $benchmarkType Benchmark with $scaleFactor GB")
       .getOrCreate()
 
     if (onlyWarn) {
@@ -41,9 +42,14 @@ object BenchmarkSQL {
       query_filter = filterQueries.split(",").toSeq
     }
 
+    val queries = benchmarkType match {
+      case "read" => tpcds.tpcds2_13Queries
+      case "write" => tpcds.mergeQueries
+    }
+
     val filtered_queries = query_filter match {
-      case Seq() => tpcds.tpcds2_13Queries
-      case _ => tpcds.tpcds2_13Queries.filter(q => query_filter.contains(q.name))
+      case Seq() => queries
+      case _ => queries.filter(q => query_filter.contains(q.name))
     }
 
     // Start experiment

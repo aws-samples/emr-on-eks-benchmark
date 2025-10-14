@@ -33,6 +33,7 @@ class TPCDS(@transient sqlContext: SQLContext)
   with Tpcds_1_4_Queries
   with Tpcds_2_4_Queries
   with Tpcds_2_13_Queries
+  with TPCDS_Writes
   with Serializable {
 
   def this() = this(SparkSession.builder.getOrCreate().sqlContext)
