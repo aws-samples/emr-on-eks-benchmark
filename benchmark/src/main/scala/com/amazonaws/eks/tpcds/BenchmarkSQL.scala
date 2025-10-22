@@ -64,7 +64,7 @@ object BenchmarkSQL {
     // Summarize results
     val result = specificResultTable
       .withColumn("result", explode(col("results")))
-      .withColumn("executionSeconds", col("result.executionTime")/1000)
+      .withColumn("executionSeconds", round(col("result.executionTime")/1000, 9))
       .withColumn("queryName", col("result.name"))
     result.select("iteration", "queryName", "executionSeconds").show()
     println(s"Final results at $resultPath")
