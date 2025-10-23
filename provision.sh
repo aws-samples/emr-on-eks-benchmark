@@ -20,7 +20,7 @@ echo "  setup IAM roles ......"
 echo "==============================================="
 
 # create S3 bucket for application
-if [ $AWS_REGION=="us-east-1" ]; then
+if [$AWS_REGION=="us-east-1"]; then
   aws s3api create-bucket --bucket $S3TEST_BUCKET --region $AWS_REGION 
 else
   aws s3api create-bucket --bucket $S3TEST_BUCKET --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION
