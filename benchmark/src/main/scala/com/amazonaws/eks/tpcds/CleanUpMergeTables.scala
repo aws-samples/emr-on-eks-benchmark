@@ -16,11 +16,12 @@ object CleanUpMergeTables {
 
     val parquetSourceDirectory = args(0)
     val icebergWarehouseDirectory = args(1)
-    val database = args(2)
+    val hive_database = args(2)
     val onlyWarn = args.lift(3).exists(_.toBoolean)
 
     val spark = SparkSession.builder
-      .appName(s"TPCDS Clean up merge tables for $database")
+      .appName(s"TPCDS Clean up merge tables for $hive_database")
+      .enableHiveSupport()
       .getOrCreate()
 
     if (onlyWarn) {
@@ -29,15 +30,14 @@ object CleanUpMergeTables {
     }
 
     Try {
-      spark.sql(s"DROP DATABASE IF EXISTS $database CASCADE")
-      spark.sql(s"DROP DATABASE IF EXISTS ${database}_iceberg CASCADE")
+      spark.sql(s"DROP DATABASE IF EXISTS $hive_database CASCADE")
 
       deleteS3Directory(parquetSourceDirectory)
       deleteS3Directory(icebergWarehouseDirectory)
     } match {
-      case Success(_) => println(s"Successfully cleaned up $database")
+      case Success(_) => println(s"Successfully cleaned up $hive_database")
       case Failure(e) =>
-        println(s"Failed to clean up $database: ${e.getMessage}")
+        println(s"Failed to clean up $hive_database: ${e.getMessage}")
         e.printStackTrace()
     }
 

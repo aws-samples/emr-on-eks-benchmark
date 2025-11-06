@@ -29,9 +29,9 @@ object CreateIcebergTablesForWrites {
     // Temp database for the hive tables
     val tempDatabaseName = databaseName + "_temp_hive"
 
-    val spark = SparkSession
-      .builder
+    val spark = SparkSession.builder
       .appName(s"TPCDS SQL Benchmark create tables for write benchmark with scale $scaleFactor GB and $format format")
+      .enableHiveSupport()
       .getOrCreate()
 
     if (onlyWarn) {
@@ -138,20 +138,16 @@ object CreateIcebergTablesForWrites {
     val tables = spark.sql("show tables")
     tables.collect().map(r => r(1).toString).foreach(t => {
       val source_table = "source_table => 'spark_catalog." + tempDatabaseName + "." + t + "', "
-      val target_table = "table => 'hadoop_catalog." + databaseName + t + "', "
-      val location = "location => '" + s3PathPrefixDestinationDir + "/" + databaseName + "/" + t + "_iceberg/" + "'"
-      if (true) {
-        val command = "CALL iceberg.system.snapshot(" +
-          source_table +
-          target_table +
-          location +
-          ")"
-        spark.sql(command)
-        Thread.sleep(64000)
-      }
+      val target_table = "table => 'hadoop_catalog." + databaseName + "." + t + "'"
+      val command = "CALL hadoop_catalog.system.snapshot(" +
+        source_table +
+        target_table +
+        ")"
+      spark.sql(command)
+      Thread.sleep(64000)
     })
 
-    spark.sql("show tables from").show()
+    spark.sql(s"show tables from hadoop_catalog.$databaseName").show()
 
     sys.exit(0)
   }
