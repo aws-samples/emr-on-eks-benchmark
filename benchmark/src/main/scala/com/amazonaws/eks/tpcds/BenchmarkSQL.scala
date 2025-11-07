@@ -57,7 +57,8 @@ object BenchmarkSQL {
       filtered_queries,
       iterations = iterations,
       resultLocation = resultLocation,
-      forkThread = true)
+      forkThread = true,
+      isWriteBenchmark = benchmarkType == "write")
 
     experiment.waitForFinish(timeout)
 
