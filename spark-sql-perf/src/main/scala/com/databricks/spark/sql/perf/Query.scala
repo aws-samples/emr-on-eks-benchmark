@@ -29,7 +29,7 @@ import org.apache.spark.sql.execution.SparkPlan
 class Query(
     override val name: String,
     buildDataFrame: => DataFrame,
-    val description: String = "",
+    val query_description: String = "",
     val sqlText: Option[String] = None,
     override val executionMode: ExecutionMode = ExecutionMode.ForeachResults)
   extends Benchmarkable with Serializable {
@@ -38,23 +38,25 @@ class Query(
 
   override def toString: String = {
     try {
-      s"""
-         |== Query: $name ==
-         |${buildDataFrame.queryExecution.analyzed}
+      if (query_description == "TPCDS write Query") {
+        s"""
+  		      |== Query: $name ==
+  		      """.stripMargin
+      } else {
+        s"""
+           |== Query: $name ==
+           |${buildDataFrame.queryExecution.analyzed}
      """.stripMargin
+      }
     } catch {
       case e: Exception =>
         s"""
            |== Query: $name ==
            | Can't be analyzed: $e
            |
-           | $description
+           | $query_description
          """.stripMargin
     }
-  }
-
-  lazy val tablesInvolved = buildDataFrame.queryExecution.logical collect {
-    case r: UnresolvedRelation => r.tableName
   }
 
   def newDataFrame() = buildDataFrame
@@ -64,7 +66,10 @@ class Query(
       description: String = "",
       messages: ArrayBuffer[String]): BenchmarkResult = {
     try {
-      val dataFrame = buildDataFrame
+      var dataFrame = sqlSession.emptyDataFrame
+      val dataFrameEvalTime = measureTimeMs {
+        dataFrame = buildDataFrame
+      }
       val queryExecution = dataFrame.queryExecution
       // We are not counting the time of ScalaReflection.convertRowToScala.
       val parsingTime = measureTimeMs {
@@ -117,7 +122,7 @@ class Query(
       // Note: queryExecution.{logical, analyzed, optimizedPlan, executedPlan} has been already
       // lazily evaluated above, so below we will count only execution time.
       var result: Option[Long] = None
-      val executionTime = measureTimeMs {
+      var executionTime = measureTimeMs {
         executionMode match {
           case ExecutionMode.CollectResults => dataFrame.collect()
           case ExecutionMode.ForeachResults => dataFrame.foreach { _ => ():Unit }
@@ -133,8 +138,16 @@ class Query(
         }
       }
 
+      if (query_description == "TPCDS write Query") {
+        executionTime = dataFrameEvalTime
+      }
+
       val joinTypes = dataFrame.queryExecution.executedPlan.collect {
         case k if k.nodeName contains "Join" => k.nodeName
+      }
+
+      lazy val tablesInvolved = dataFrame.queryExecution.logical collect {
+        case r: UnresolvedRelation => r.tableName
       }
 
       BenchmarkResult(
@@ -161,6 +174,6 @@ class Query(
 
   /** Change the ExecutionMode of this Query to HashResults, which is used to check the query result. */
   def checkResult: Query = {
-    new Query(name, buildDataFrame, description, sqlText, ExecutionMode.HashResults)
+    new Query(name, buildDataFrame, query_description, sqlText, ExecutionMode.HashResults)
   }
 }

@@ -106,10 +106,12 @@ abstract class Benchmark(
       tags: Map[String, String] = Map.empty,
       timeout: Long = 0L,
       resultLocation: String = resultsLocation,
-      forkThread: Boolean = true) = {
+      forkThread: Boolean = true,
+      isWriteBenchmark: Boolean = false) = {
 
     new ExperimentStatus(executionsToRun, includeBreakdown, iterations, variations, tags,
-      timeout, resultLocation, sqlContext, allTables, currentConfiguration, forkThread = forkThread)
+      timeout, resultLocation, sqlContext, allTables, currentConfiguration, forkThread = forkThread,
+      isWriteBenchmark = isWriteBenchmark)
   }
 
 
@@ -298,7 +300,8 @@ object Benchmark {
       sqlContext: SQLContext,
       allTables: Seq[Table],
       currentConfiguration: BenchmarkConfiguration,
-      forkThread: Boolean = true) {
+      forkThread: Boolean = true,
+      isWriteBenchmark: Boolean = false) {
     val currentResults = new collection.mutable.ArrayBuffer[BenchmarkResult]()
     val currentRuns = new collection.mutable.ArrayBuffer[ExperimentRun]()
     val currentMessages = new collection.mutable.ArrayBuffer[String]()
@@ -329,40 +332,44 @@ object Benchmark {
     val combinations = cartesianProduct(variations.map(l => (0 until l.options.size).toList).toList)
     val resultsFuture = Future {
 
-      // If we're running queries, create tables for them
-      executionsToRun
-        .collect { case query: Query => query }
-        .flatMap { query =>
-          try {
-            query.newDataFrame().queryExecution.logical.collect {
-              case r: UnresolvedRelation => r.tableName
-            }
-          } catch {
-            // ignore the queries that can't be parsed
-            case e: Exception => Seq()
-          }
-        }
-        .distinct
-        .foreach { name =>
-          try {
-            sqlContext.table(name)
-            logMessage(s"Table $name exists.")
-          } catch {
-            case ae: Exception =>
-              val table = allTables
-                .find(_.name == name)
-              if (table.isDefined) {
-                logMessage(s"Creating table: $name")
-                table.get.data
-                  .write
-                  .mode("overwrite")
-                  .saveAsTable(name)
-              } else {
-                // the table could be subquery
-                logMessage(s"Couldn't read table $name and its not defined as a Benchmark.Table.")
+      if (isWriteBenchmark) {
+        logMessage(s"Skip creating tables for write benchmark")
+      } else {
+        // If we're running queries, create tables for them
+        executionsToRun
+          .collect { case query: Query => query }
+          .flatMap { query =>
+            try {
+              query.newDataFrame().queryExecution.logical.collect {
+                case r: UnresolvedRelation => r.tableName
               }
+            } catch {
+              // ignore the queries that can't be parsed
+              case e: Exception => Seq()
+            }
           }
-        }
+          .distinct
+          .foreach { name =>
+            try {
+              sqlContext.table(name)
+              logMessage(s"Table $name exists.")
+            } catch {
+              case ae: Exception =>
+                val table = allTables
+                  .find(_.name == name)
+                if (table.isDefined) {
+                  logMessage(s"Creating table: $name")
+                  table.get.data
+                    .write
+                    .mode("overwrite")
+                    .saveAsTable(name)
+                } else {
+                  // the table could be subquery
+                  logMessage(s"Couldn't read table $name and its not defined as a Benchmark.Table.")
+                }
+            }
+          }
+      }
 
       // Run the benchmarks!
       val results: Seq[ExperimentRun] = (1 to iterations).flatMap { i =>
@@ -380,7 +387,7 @@ object Benchmark {
 
             currentExecution = q.name
             currentPlan = q match {
-              case query: Query =>
+              case query: Query if query.query_description != "TPCDS write Query" =>
                 try {
                   query.newDataFrame().queryExecution.executedPlan.toString()
                 } catch {
