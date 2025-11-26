@@ -198,6 +198,136 @@ true,<database-name>],ActionOnFailure=CONTINUE --region <aws-region>
 
 > Note: We use 3TB dataset in the [examples](./examples), if you'd like to change to 100G or 1T, don't forget to change the parameter `Scale factor (in GB)` in the job submission scripts. Spark executor configuration should also be adjusted correspondingly.
 
+### Benchmark for EMR on EC2 with Spark & Iceberg for Writes
+
+**Build the package and get the benchmark jar:**
+```bash
+# checkout repository and switch to tpcds-v2.13_iceberg branch
+
+git clone https://github.com/aws-samples/emr-on-eks-benchmark.git
+
+cd emr-on-eks-benchmark
+
+git checkout --track origin/tpcds-v2.13_iceberg
+
+# For EMR 7.12
+export SPARK_VERSION=3.5.6
+export HADOOP_VERSION=3.4.1
+
+docker build -t spark:$SPARK_VERSION_hadoop_$HADOOP_VERSION -f docker/hadoop-aws-3.3.1/Dockerfile --build-arg HADOOP_VERSION=$HADOOP_VERSION --build-arg SPARK_VERSION=$SPARK_VERSION .
+docker build -t eks-spark-benchmark:$SPARK_VERSION -f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=spark:$SPARK_VERSION_hadoop_$HADOOP_VERSION .
+
+# Locate the benchmark application jar file within a docker image. It should be in /opt/spark/examples/jars/
+docker run --name spark-benchmark -it eks-spark-benchmark:$SPARK_VERSION bash
+
+docker cp spark-benchmark:/opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar ./spark-benchmark-assembly-3.5.6.jar
+
+# Upload to s3
+S3BUCKET=<S3_BUCKET>
+aws s3 cp ./spark-benchmark-assembly-3.5.6.jar s3://$S3BUCKET
+
+```
+
+**Create an EMR cluster for write benchmark data generation:**
+
+
+Example:
+```bash
+aws emr create-cluster \
+ --name "kishore-write-benchmarks-test" \
+ --log-uri "s3://------" \
+ --release-label "emr-7.12.0" \
+ --service-role "EMR_DefaultRole" \
+ --security-configuration "IMDSv2" \
+ --unhealthy-node-replacement \
+ --ec2-attributes '{"InstanceProfile":"EMR_EC2_DefaultRole","EmrManagedMasterSecurityGroup":"xxxxxxxx","EmrManagedSlaveSecurityGroup":"xxxxxx","KeyName":"xxxxx","SubnetIds":["xxxxxxx"]}' \
+ --applications Name=Hive Name=Spark \
+ --configurations '[{"Classification":"iceberg-defaults","Properties":{"iceberg.enabled":"true"}},{"Classification":"yarn-site","Properties":{}},{"Classification":"core-site","Properties":{}}]' \
+ --instance-groups '[{"InstanceCount":16,"InstanceGroupType":"CORE","InstanceType":"r5d.4xlarge","EbsConfiguration":{"EbsBlockDeviceConfigs":[]}},{"InstanceCount":1,"InstanceGroupType":"MASTER","InstanceType":"r5d.4xlarge","EbsConfiguration":{"EbsBlockDeviceConfigs":[]}}]' \
+ --auto-scaling-role "EMR_AutoScaling_DefaultRole" \
+ --scale-down-behavior "TERMINATE_AT_TASK_COMPLETION" \
+ --ebs-root-volume-size "20" \
+ --region "us-east-2"
+```
+
+
+There are two datasources needed for our benchmark.
+1. 3TB TPCDS data `s3://blogpost-sparkoneks-us-east-1/blog/BLOG_TPCDS-TEST-3T-partitioned`
+2. Different permutations of TPCDS web_returns tables with matching and non-matching records as source tables for Delta merge DMLs
+
+**Generate merge source tables:**
+
+Create 13 web_returns table variants with different file sampling and match/non-match ratios. Use Spark to:
+
+```scala
+// Read TPCDS 3TB source table
+val fullTableDF = spark.read.load("s3://<bucket>/<source-db>/web_returns/")
+
+// Sample files and create matched/non-matched records
+val sampledFilesDF = fullTableDF.select("_metadata.file_path").distinct.sample(0.05)
+val sampledDataDF = fullTableDF.withColumn("file_path", col("_metadata.file_path")).join(sampledFilesDF, "file_path")
+val matchedData = sampledDataDF.sample(0.10)
+val notMatchedData = sampledDataDF.sample(0.10).withColumn("wr_order_number", rand()).withColumn("wr_item_sk", rand())
+val data = matchedData.union(notMatchedData)
+
+// Write to S3
+data.write.parquet("s3://<bucket>/<target-db>/web_returns_file005_match010_notmatch010/")
+```
+
+Required table names (format: `web_returns_file<pct>_match<pct>_notmatch<pct>`):
+- web_returns_file005_match000_notmatch005
+- web_returns_file005_match000_notmatch010
+- web_returns_file005_match000_notmatch050
+- web_returns_file005_match000_notmatch100
+- web_returns_file005_match001_notmatch010
+- web_returns_file005_match005_notmatch000
+- web_returns_file005_match010_notmatch000
+- web_returns_file005_match010_notmatch010
+- web_returns_file005_match050_notmatch001
+- web_returns_file005_match099_notmatch001
+- web_returns_file005_match100_notmatch001
+- web_returns_file050_match001_notmatch0001
+- web_returns_file100_match001_notmatch0001
+
+
+**Creating Iceberg tables:**
+Using the cluster created in the above step, we can create Iceberg tables for the write benchmark using,
+
+```bash
+aws emr add-steps \
+  --cluster-id <cluster-id> \
+  --region us-east-2 \
+  --steps Type=Spark,Name="CreateIcebergTablesForMerge",ActionOnFailure=CONTINUE,Args=\[--class,com.amazonaws.eks.tpcds.CreateIcebergTablesForWrites,--conf,spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,--conf,spark.sql.catalog.hadoop_catalog=org.apache.iceberg.spark.SparkCatalog,--conf,spark.sql.catalog.hadoop_catalog.type=hadoop,--conf,spark.sql.catalog.hadoop_catalog.warehouse=<your iceberg s3 warehouse>,--conf,spark.sql.catalog.hadoop_catalog.io-impl=org.apache.iceberg.aws.s3.S3FileIO,s3://<BUCKET>/spark-benchmark-assembly-3.5.6.jar,s3://<LOCATION of 3TB TPCDS data>/,s3://<LOCATION of the DELTA Merge source>,s3://<location of generated iceberg data/tables>,parquet,3000,true,<Iceberg database name>\]
+```
+
+**Create an EMR Cluster for running the write benchmark:**
+
+Example: 
+```bash
+aws emr create-cluster \
+ --name "<cluster name>" \
+ --log-uri "s3://xxxxxxx" \
+ --release-label "emr-7.12.0" \
+ --service-role "xxxxxxxxxxx" \
+ --security-configuration "IMDSv2" \
+ --unhealthy-node-replacement \
+ --ec2-attributes '{"InstanceProfile":"EMR_EC2_DefaultRole","EmrManagedMasterSecurityGroup":"xxxxxxxxx","EmrManagedSlaveSecurityGroup":"xxxxxxxx","KeyName":"xxxxxxxx","SubnetIds":["xxxxxxxxx"]}' \
+ --applications Name=Hive Name=Spark \
+ --configurations '[{"Classification":"iceberg-defaults","Properties":{"iceberg.enabled":"true"}},{"Classification":"yarn-site","Properties":{}},{"Classification":"core-site","Properties":{}}]' \
+ --instance-groups '[{"InstanceCount":8,"InstanceGroupType":"CORE","InstanceType":"r5d.4xlarge","EbsConfiguration":{"EbsBlockDeviceConfigs":[]}},{"InstanceCount":1,"InstanceGroupType":"MASTER","InstanceType":"r5d.4xlarge","EbsConfiguration":{"EbsBlockDeviceConfigs":[]}}]' \
+ --auto-scaling-role "EMR_AutoScaling_DefaultRole" \
+ --scale-down-behavior "TERMINATE_AT_TASK_COMPLETION" \
+ --ebs-root-volume-size "20" \
+ --region "us-east-2"
+```
+
+**Run the write benchmark:**
+In the cluster created with the above step run,
+
+```bash
+aws emr add-steps --cluster-id <your-cluster-id> --steps Type=Spark,Name="EMR MERGE Benchmark Job",Args=\[--class,com.amazonaws.eks.tpcds.BenchmarkSQL,--conf,spark.driver.cores=4,--conf,spark.driver.memory=10g,--conf,spark.executor.cores=16,--conf,spark.executor.memory=100g,--conf,spark.executor.instances=8,--conf,spark.network.timeout=2000,--conf,spark.executor.heartbeatInterval=300s,--conf,spark.dynamicAllocation.enabled=false,--conf,spark.shuffle.service.enabled=false,--conf,spark.sql.iceberg.data-prefetch.enabled=true,--conf,spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,--conf,spark.sql.catalog.local=org.apache.iceberg.spark.SparkCatalog,--conf,spark.sql.catalog.local.type=hadoop,--conf,spark.sql.catalog.local.warehouse=<your iceberg s3 warehouse>,--conf,spark.sql.defaultCatalog=local,--conf,spark.sql.catalog.local.io-impl=org.apache.iceberg.aws.s3.S3FileIO,s3://<Bucket>/spark-benchmark-assembly-3.5.6.jar,s3://<Bucket>/output/results-1,3000,1,false,'m1\,m2\,m3\,m4\,m5\,m6\,m7\,m8\,m9\,m10\,m11\,m12\,m13\,m14\,m15\,m16\,m17\,m18\,m19\,m20\,m21\,m22\,m23\,m24\,m25\,m26\,m27\,m28\,m29\,m30\,m31\,m32\,m33\,m34\,m35\,m36\,m37',true,<Iceberg database name>,write\],ActionOnFailure=CONTINUE --region us-east-2
+```
+
 ## Cleanup
 ```bash
 export EKSCLUSTER_NAME=eks-nvme
