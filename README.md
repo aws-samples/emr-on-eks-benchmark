@@ -5,7 +5,7 @@ If you want to use the [prebuild docker image](https://github.com/aws-samples/em
 
 ## Prerequisite
 
-- eksctl is installed ( >= 0.143.0)
+- eksctl is installed ( >= 0.210.0)
 ```bash
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
 sudo mv -v /tmp/eksctl /usr/local/bin
@@ -18,7 +18,7 @@ sudo installer -pkg ./AWSCLIV2.pkg -target /
 aws --version
 rm AWSCLIV2.pkg
 ```
-- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) for Linux or Windows.( >= 1.26.4 )
+- Install kubectl on macOS, check out the [link](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/) for Linux or Windows.( >= 1.34.0 )
 ```bash
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
@@ -115,6 +115,19 @@ export EMRCLUSTER_NAME=emr-on-eks-nvme
 export AWS_REGION=us-east-1
 bash examples/emr6.5-benchmark.sh
 ```
+### Run EMR 7.12 RAPIDS GPU benchmark
+EMR 7.12 includes RAPIDS GPU acceleration for Spark. Example for g6e.8xlarge with NVMe:
+```shell
+# 3TB dataset (14.8 min runtime)
+bash examples/emr7.12-rapids-benchmark-g6e.sh 3000
+
+# 10TB dataset (47.4 min runtime)
+bash examples/emr7.12-rapids-benchmark-g6e.sh 10000
+
+# 30TB dataset
+bash examples/emr7.12-rapids-benchmark-g6e.sh 30000
+```
+
 ### Benchmark for EMR on EC2
 Few notes for the set up:
 1. Use the same instance type c5d.9xlarge as in the EKS cluster.
