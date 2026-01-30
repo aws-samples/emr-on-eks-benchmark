@@ -1,0 +1,26 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: eks-nvme
+  region: us-east-1
+
+managedNodeGroups:
+  - name: g6e-8xl-ng
+    instanceType: g6e.8xlarge
+    desiredCapacity: 0
+    minSize: 0
+    maxSize: 8
+    volumeSize: 100
+    privateNetworking: true
+    labels:
+      instance-type: g6e-8xlarge
+      workload: tpcds-benchmark
+    taints:
+      - key: workload
+        value: g6e-benchmark
+        effect: NoSchedule
+    tags:
+      k8s.io/cluster-autoscaler/enabled: "true"
+      k8s.io/cluster-autoscaler/eks-nvme: "owned"
+      auto-delete: "true"
