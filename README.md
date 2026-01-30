@@ -118,10 +118,10 @@ bash examples/emr6.5-benchmark.sh
 ### Run EMR 7.12 RAPIDS GPU benchmark
 EMR 7.12 includes RAPIDS GPU acceleration for Spark. Example for g6e.8xlarge with NVMe:
 ```shell
-# 3TB dataset (14.8 min runtime)
+# 3TB dataset 
 bash examples/emr7.12-rapids-benchmark-g6e.sh 3000
 
-# 10TB dataset (47.4 min runtime)
+# 10TB dataset 
 bash examples/emr7.12-rapids-benchmark-g6e.sh 10000
 
 # 30TB dataset
