@@ -81,20 +81,20 @@ object TreeBuilder {
    * @param numClasses  Number of classes.
    */
   private class ClassLabelPairGenerator(val numClasses: Int)
-    extends RandomDataGenerator[Pair[Double, Double]] {
+    extends RandomDataGenerator[(Double, Double)] {
 
     require(numClasses >= 2,
       s"ClassLabelPairGenerator given label numClasses = $numClasses, but numClasses should be >= 2.")
 
     private val rng = new java.util.Random()
 
-    override def nextValue(): Pair[Double, Double] = {
+    override def nextValue(): (Double, Double) = {
       val left = rng.nextInt(numClasses)
       var right = rng.nextInt(numClasses)
       while (right == left) {
         right = rng.nextInt(numClasses)
       }
-      new Pair[Double, Double](left, right)
+      (left.toDouble, right.toDouble)
     }
 
     override def setSeed(seed: Long): Unit = {
@@ -109,12 +109,12 @@ object TreeBuilder {
    * Generator for a pair of real-valued labels.
    * Pairs are useful for trees to make sure sibling leaf nodes make different predictions.
    */
-  private class RealLabelPairGenerator() extends RandomDataGenerator[Pair[Double, Double]] {
+  private class RealLabelPairGenerator() extends RandomDataGenerator[(Double, Double)] {
 
     private val rng = new java.util.Random()
 
-    override def nextValue(): Pair[Double, Double] =
-      new Pair[Double, Double](rng.nextDouble(), rng.nextDouble())
+    override def nextValue(): (Double, Double) =
+      (rng.nextDouble(), rng.nextDouble())
 
     override def setSeed(seed: Long): Unit = {
       rng.setSeed(seed)
@@ -185,7 +185,7 @@ object TreeBuilder {
       subtreeDepth: Int,
       featureArity: Array[Int],
       impurityCalculator: ImpurityCalculator,
-      labelGenerator: RandomDataGenerator[Pair[Double, Double]],
+      labelGenerator: RandomDataGenerator[(Double, Double)],
       usedFeatures: Set[Int],
       rng: scala.util.Random): Node = {
 

@@ -2,40 +2,31 @@ name := "eks-spark-benchmark"
 
 version := "1.0"
 
-scalaVersion := "2.12.10"
+scalaVersion := "2.13.16"
 
-javacOptions ++= Seq("-source", "1.8", "-target", "1.8")
+javacOptions ++= Seq("-source", "17", "-target", "17")
 
-unmanagedBase <<= baseDirectory { base => base / "libs" }
+scalacOptions += "-release:17"
+
+unmanagedBase := baseDirectory.value / "libs"
 
 // Dependencies required for this project
 libraryDependencies ++= Seq(
-  "org.apache.spark" %% "spark-core" % "3.2.0" % "provided",
-  "org.apache.spark" %% "spark-sql" % "3.2.0" % "provided",
+  "org.apache.spark" %% "spark-core" % "4.0.0" % "provided",
+  "org.apache.spark" %% "spark-sql" % "4.0.0" % "provided",
   // JSON serialization
-  "org.json4s" %% "json4s-native" % "3.6.7",
+  "org.json4s" %% "json4s-native" % "4.0.7",
   // scala logging
-  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5"
 )
 
 // Remove stub classes
-assemblyMergeStrategy in assembly := {
+assembly / assemblyMergeStrategy := {
   case PathList("org", "apache", "spark", "unused", "UnusedStubClass.class") => MergeStrategy.discard
   case x =>
-    val oldStrategy = (assemblyMergeStrategy in assembly).value
-    oldStrategy(x)
+    val old = (assembly / assemblyMergeStrategy).value
+    old(x)
 }
 
 // Exclude the Scala runtime jars
-assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
-
-resolvers ++= Seq(
-  "Spray Repository" at "http://repo.spray.cc/",
-  "Cloudera Repository" at "https://repository.cloudera.com/artifactory/cloudera-repos/",
-  "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-  "Second Typesafe repo" at "http://repo.typesafe.com/typesafe/maven-releases/",
-  "Mesosphere Public Repository" at "http://downloads.mesosphere.io/maven",
-  Resolver.sonatypeRepo("public")
-)
-
-resolvers += Resolver.url("bintray-sbt-plugins", url("http://dl.bintray.com/sbt/sbt-plugin-releases"))(Resolver.ivyStylePatterns)
+assembly / assemblyOption ~= { _.withIncludeScala(false) }

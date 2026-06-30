@@ -15,15 +15,18 @@
  */
 
 name := "benchmarks"
-scalaVersion := "2.12.15"
+scalaVersion := "2.13.16"
 
 lazy val root = (project in file("."))
   .settings(
     name := "benchmarks",
-    libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.3.1" % "provided",
-    libraryDependencies += "com.github.scopt" %% "scopt" % "4.0.1",
-    libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.1",
-    
+    libraryDependencies += "org.apache.spark" %% "spark-sql" % "4.0.0" % "provided",
+    libraryDependencies += "com.github.scopt" %% "scopt" % "4.1.0",
+    libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.18.2",
+
+    javacOptions ++= Seq("-source", "17", "-target", "17"),
+    scalacOptions += "-release:17",
+
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard
       case x => MergeStrategy.first

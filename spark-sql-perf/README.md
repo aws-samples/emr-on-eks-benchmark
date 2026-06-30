@@ -35,7 +35,7 @@ The first run of `bin/run` will build the library.
 ## Build
 
 Use `sbt package` or `sbt assembly` to build the library jar.  
-Use `sbt +package` to build for scala 2.11 and 2.12.
+Use `sbt +package` to build for scala 2.13.
 
 ## Local performance tests
 The framework contains twelve benchmarks that can be executed in local mode. They are organized into three classes and target different components and functions of Spark:

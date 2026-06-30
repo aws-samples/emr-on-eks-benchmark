@@ -36,7 +36,7 @@ object SparkUtils {
       runtimeInfo = caseClassToMap(info.runtime),
       sparkProps = Utils.redact(sc.conf, info.sparkProperties).toMap,
       hadoopProps =  Utils.redact(sc.conf, info.hadoopProperties).toMap
-        .filterKeys(k => !k.startsWith("mapred") && !k.startsWith("yarn")),
+        .filterKeys(k => !k.startsWith("mapred") && !k.startsWith("yarn")).toMap,
       systemProps =  Utils.redact(sc.conf,  info.systemProperties).toMap,
       classpathEntries = info.classpathEntries.toMap
     )

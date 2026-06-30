@@ -37,7 +37,7 @@ class MLPipelineStageBenchmarkable(
       trainingData.count()
     } catch {
       case NonFatal(e) =>
-        println(s"$this error in beforeBenchmark: ${e.getStackTraceString}")
+        println(s"$this error in beforeBenchmark: ${e.getStackTrace.mkString("\n")}")
         throw e
     }
   }
@@ -103,7 +103,7 @@ class MLPipelineStageBenchmarkable(
           mode = executionMode.toString,
           parameters = params.toMap,
           failure = Some(Failure(e.getClass.getSimpleName,
-            e.getMessage + ":\n" + e.getStackTraceString)))
+            e.getMessage + ":\n" + e.getStackTrace.mkString("\n"))))
     } finally {
       Option(testData).map(_.unpersist())
       Option(trainingData).map(_.unpersist())

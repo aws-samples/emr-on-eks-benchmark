@@ -133,7 +133,7 @@ class DatasetPerformance extends Benchmark {
     new SparkPerfExecution(
       "RDD: average",
       Map.empty,
-      prepare = () => Unit,
+      prepare = () => (),
       run = () => {
         val sumAndCount =
           smallrdd.map(i => (i, 1)).reduce((a, b) => (a._1 + b._1, a._2 + b._2))
