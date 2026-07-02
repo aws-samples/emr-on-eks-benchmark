@@ -63,14 +63,14 @@ aws ecr create-repository --repository-name eks-spark-benchmark --image-scanning
 
 # Build multi-platform Spark base image
 docker buildx build --platform linux/amd64,linux/arm64 \
--t $ECR_URL/spark:3.1.2_hadoop_3.3.1 \
--f docker/hadoop-aws-3.3.1/Dockerfile --build-arg HADOOP_VERSION=3.3.1 --build-arg SPARK_VERSION=3.1.2 \
+-t $ECR_URL/spark:4.0.2_hadoop_3.3.6 \
+-f docker/hadoop-aws-3.3.1/Dockerfile --build-arg HADOOP_VERSION=3.3.6 --build-arg SPARK_VERSION=4.0.2 \
 --push .
 
 # Build multi-platform benchmark utility based on the Spark
 docker buildx build --platform linux/amd64,linux/arm64 \
--t $ECR_URL/eks-spark-benchmark:3.1.2 \
--f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$ECR_URL/spark:3.1.2_hadoop_3.3.1 \
+-t $ECR_URL/eks-spark-benchmark:4.0.2 \
+-f docker/benchmark-util/Dockerfile --build-arg SPARK_BASE_IMAGE=$ECR_URL/spark:4.0.2_hadoop_3.3.6 \
 --push .
 ```
 
@@ -79,13 +79,13 @@ If you need to build the image based on a different Spark image, for example [EM
 # get EMR on EKS public image as a base
 export SRC_ECR_URL=755674844232.dkr.ecr.us-east-1.amazonaws.com
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $SRC_ECR_URL
-docker pull $SRC_ECR_URL/spark/emr-6.5.0:latest
+docker pull $SRC_ECR_URL/spark/emr-spark-8.0.0:latest
 
 # build and push a multi-platform custom image based on EMR Spark base image
 docker buildx build --platform linux/amd64,linux/arm64 \
--t $ECR_URL/eks-spark-benchmark:emr6.5 \
+-t $ECR_URL/eks-spark-benchmark:emr8.0 \
 -f docker/benchmark-util/Dockerfile \
---build-arg SPARK_BASE_IMAGE=$SRC_ECR_URL/spark/emr-6.5.0:latest \
+--build-arg SPARK_BASE_IMAGE=$SRC_ECR_URL/emr-spark-8.0.0:latest \
 --push .
 ```
 
@@ -128,7 +128,7 @@ kubectl cp oss/oss-spark-tpcds-exec-1:/opt/spark/examples/jars/eks-spark-benchma
 
 However if you are running a benchmark just for EMR on EC2, you probably don\'t have a running container. To copy the jar file from a docker container, you need two terminals. In the first terminal, spin up a docker container based on your image built:
 ```bash
-docker run --name spark-benchmark -it $ECR_URL/eks-spark-benchmark:3.1.2 bash
+docker run --name spark-benchmark -it $ECR_URL/eks-spark-benchmark:emr8.0 bash
 # you are logged in to the container now, find the jar file
 hadoop@9ca5b2afe778: ls -alh /opt/spark/examples/jars/eks-spark-benchmark-assembly-1.0.jar
 ```
