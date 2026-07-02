@@ -1,11 +1,10 @@
 # // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # // SPDX-License-Identifier: MIT-0
-FROM openjdk:8-jdk-slim AS builder
+FROM openjdk:27-ea-17-jdk-slim AS builder
 
 # set desired spark, hadoop and kubernetes client versions
-ARG SPARK_VERSION=3.2.1
-ARG HADOOP_VERSION=3.3.1
-# ARG aws_java_sdk_version=1.11.901
+ARG SPARK_VERSION=4.0.2
+ARG HADOOP_VERSION=3.3.6
 
 # Download Spark
 ADD https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-without-hadoop.tgz .
